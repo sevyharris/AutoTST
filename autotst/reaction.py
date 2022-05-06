@@ -578,8 +578,43 @@ class Reaction():
 
         for direction, conformers in self.ts.items():
             conformer = conformers[0]
-            conformer.ase_molecule.set_calculator(ase_calculator)
+
+            try:
+                abc = conformer.ase_molecule
+                logging.warning(f"abc={abc}")
+            except:
+                logging.warning("that didn't work")
+            # conformer.ase_molecule.set_calculator(ase_calculator)
+            conformer.ase_molecule.calc = ase_calculator
             conformers = systematic_search(conformer, delta=120)
+            for conformer in conformers:
+                conformer.direction = direction
+            self.ts[direction] = conformers
+
+        return self.ts
+    
+    def generate_conformers_all(self, ase_calculator=None):
+        """
+        A method to generate an ensemble of low energy conformers.
+        Currently only supports a systematic search with the goal of adding evolutionary searches
+
+        Variables: 
+        - method (str): the method of the conformer search. Currently only systematic is supported
+        - calculator (ASECalculator): the calculator you want to evaluate your conformers with.
+
+        Returns:
+        - ts (dict): a dictionary containing an ensemble of low energy transition state geometries in 
+            the forward and reverse direction
+        """
+
+        assert ase_calculator, "Please provide an ASE calculator object"
+        
+        from .conformer.systematic import find_all_combos
+
+        for direction, conformers in self.ts.items():
+            conformer = conformers[0]
+            conformer.ase_molecule.set_calculator(ase_calculator)
+            conformers = find_all_combos(conformer, delta=120)
             for conformer in conformers:
                 conformer.direction = direction
             self.ts[direction] = conformers
@@ -718,6 +753,7 @@ class TS(Conformer):
         returns both the rdkit_molecule and the bm
         """
         self._rdkit_molecule = Conformer(rmg_molecule=self.rmg_molecule).get_rdkit_mol()
+        # self.rdkit_molecule = Conformer(rmg_molecule=self.rmg_molecule).get_rdkit_mol()
 
         if self.labels is None:
             self.get_labels()

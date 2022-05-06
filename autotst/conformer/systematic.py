@@ -181,6 +181,8 @@ def opt_conf(i):
             except RuntimeError:
                 logging.info("Optimization failed...we will use the unconverged geometry")
                 pass
+            except AssertionError:
+                logging.info("Bad eigenvalues probably ... use the unconverged geometry?")
             if str(conformer.index) == 'ref':
                 conformer.update_coords_from("ase")
                 try:
@@ -205,6 +207,9 @@ def opt_conf(i):
                 logging.info("Optimization failed...we will use the unconverged geometry")
                 converged = True
                 pass
+            except AssertionError:
+                logging.info("Bad eigenvalues probably ... use the unconverged geometry")
+                converged = True
        
         conformer.update_coords_from("ase")  
         try:
@@ -333,7 +338,7 @@ def systematic_search(conformer,
         copy_conf.ase_molecule.set_calculator(calc)
   
         conformers[index] = copy_conf
-
+    logging.info(f"Conformers to investigate: {len(conformers)}")
     num_threads = multiprocessing.cpu_count() - 1 or 1
     pool = multiprocessing.Pool(processes=num_threads)
     """

@@ -159,7 +159,7 @@ class StatMech():
                 conformer.get_geometries() 
             for torsion in conformer.torsions:
                 output += [self.get_rotor_info(conformer, torsion)]
-        output += ["]"]
+            output += ["]"]  # TODO fix this
         
         input_string = ""
 
@@ -169,6 +169,74 @@ class StatMech():
         with open(os.path.join(self.directory, "species", label, label + '.py'), "w") as f:
             f.write(input_string)
         return True
+
+
+    def write_conformer_file2(self, conformer, outdir, gauss_log, include_rotors=True):
+        """
+        A method to write Arkane files for a single Conformer object
+
+        Parameters:
+        - conformer (Conformer): a Conformer object that you want to write an Arkane file for
+        - scratch (str): the directory where you want to write arkane files to, there should be a 'species/SMILES/' subdirectory
+
+        Returns:
+        - None
+        """
+        label = conformer.smiles
+
+        species_name = os.path.basename(gauss_log[:-4])
+        parser = cclib.io.ccread(gauss_log, loglevel=logging.ERROR)
+        symbol_dict = {
+            35: "Br",
+            17: "Cl",
+            9:  "F",
+            8:  "O",
+            7:  "N",
+            6:  "C",
+            1:  "H",
+        }
+
+
+        atoms = []
+
+        for atom_num, coords in zip(parser.atomnos, parser.atomcoords[-1]):
+            atoms.append(ase.Atom(symbol=symbol_dict[atom_num], position=coords))
+
+        conformer._ase_molecule = ase.Atoms(atoms)
+        conformer.update_coords_from("ase")
+        mol = conformer.rmg_molecule
+        output = ['#!/usr/bin/env python',
+                  '# -*- coding: utf-8 -*-', ]
+
+        output += ["",
+                   f"spinMultiplicity = {conformer.rmg_molecule.multiplicity}",
+                   ""]
+
+        output += ["energy = {", f"    '{self.model_chemistry}': Log('{gauss_log}'),", "}", ""]  # fix this
+
+        output += [f"geometry = Log('{gauss_log}')", ""]
+
+        output += [
+            f"frequencies = Log('{gauss_log}')", ""]
+
+        if include_rotors:
+            output += ["rotors = ["]
+            if len(conformer.torsions) ==0:
+                conformer.get_molecules()
+                conformer.get_geometries() 
+            for torsion in conformer.torsions:
+                output += [self.get_rotor_info(conformer, torsion)]
+            output += ["]"]
+        
+        input_string = ""
+
+        for t in output:
+            input_string += t + "\n"
+
+        with open(os.path.join(outdir, species_name + '.py'), "w") as f:
+            f.write(input_string)
+        return True
+
 
     def get_rotor_info(self, conformer, torsion):
         """

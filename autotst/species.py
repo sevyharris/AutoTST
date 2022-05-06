@@ -276,7 +276,8 @@ class Conformer():
         """
 
         assert self.rmg_molecule, "Cannot create an RDKit geometry without an RMG molecule object"
-
+        if self.rmg_molecule.to_smiles() == '[C-]#[O+]':
+            RDMol = rdkit.Chem.rdchem.AtomValenceException
         RDMol = self.rmg_molecule.to_rdkit_mol(remove_h=False)
         rdkit.Chem.AllChem.EmbedMolecule(RDMol)
         self._rdkit_molecule = RDMol
