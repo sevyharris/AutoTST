@@ -220,10 +220,10 @@ class Gaussian():
             "conformers"
         )
 
-        try:
-            os.makedirs(new_scratch)
-        except OSError:
-            pass
+        # try:
+        #     os.makedirs(new_scratch)
+        # except OSError:
+        #     pass
 
         ase_gaussian = ase.calculators.gaussian.Gaussian(
             mem=self.settings["mem"],
@@ -269,10 +269,10 @@ class Gaussian():
             "conformers"
         )
 
-        try:
-            os.makedirs(new_scratch)
-        except OSError:
-            pass
+        # try:
+        #     os.makedirs(new_scratch)
+        # except OSError:
+        #     pass
         
         #if self.conformer.reaction_family != "Some reaction family with 4 labeled atoms..."
         if self.conformer.reaction_family.lower() in ["h_abstraction", "intra_h_migration", "r_addition_multiplebond"]:
@@ -346,10 +346,10 @@ class Gaussian():
             "conformers"
         )
 
-        try:
-            os.makedirs(new_scratch)
-        except OSError:
-            pass
+        # try:
+        #     os.makedirs(new_scratch)
+        # except OSError:
+        #     pass
 
         ase_gaussian = ase.calculators.gaussian.Gaussian(
             mem=self.settings["mem"],
@@ -397,10 +397,10 @@ class Gaussian():
             "conformers"
         )
 
-        try:
-            os.makedirs(new_scratch)
-        except OSError:
-            pass
+        # try:
+        #     os.makedirs(new_scratch)
+        # except OSError:
+        #     pass
 
         ase_gaussian = ase.calculators.gaussian.Gaussian(
             mem=self.settings["mem"],
@@ -444,10 +444,10 @@ class Gaussian():
             self.conformer.reaction_label,
             "irc"
         )
-        try:
-            os.makedirs(new_scratch)
-        except OSError:
-            pass
+        # try:
+        #     os.makedirs(new_scratch)
+        # except OSError:
+        #     pass
 
         ase_gaussian = ase.calculators.gaussian.Gaussian(
             mem=self.settings["mem"],
