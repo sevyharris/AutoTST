@@ -76,7 +76,8 @@ class Reaction():
         self.possible_families = [  # These families (and only these) will be loaded from both RMG and AutoTST databases
             "R_Addition_MultipleBond",
             "H_Abstraction",
-            "intra_H_migration"
+            "intra_H_migration",
+            "Disproportionation"
         ]
 
         self.label = label
@@ -169,7 +170,8 @@ class Reaction():
         self.possible_families = [  # These families (and only these) will be loaded from both RMG and AutoTST databases
             "R_Addition_MultipleBond",
             "H_Abstraction",
-            "intra_H_migration"
+            "intra_H_migration",
+            "Disproportionation",
         ]
         try:
             rmg_database.load(
@@ -313,16 +315,17 @@ class Reaction():
         assert (
             self.label or self.rmg_reaction), "You must provide a reaction or a reaction label"
 
-        match = False # We have not found a labeled reaction that matches the one provided.
-        if self.label: # A reaction label was provided
-            
+        match = False  # We have not found a labeled reaction that matches the one provided.
+        if self.label:  # A reaction label was provided
+
             # Generating lists of lists. Main list is the reactans or products
             # Secondary list is composed of the resonance structures for that species
-            r, p = self.label.split("_") 
+            r, p = self.label.split("_")
 
             smiles_conversions = {
-                "[CH]":"[CH...]"
+                "[CH]": "[CH...]",
             }
+
             def get_rmg_mol(smile):
                 if smile.upper() in list(smiles_conversions.keys()):
                     smile = smiles_conversions[smile.upper()]
@@ -337,29 +340,29 @@ class Reaction():
 
             # looping though each reaction family and each combination of reactants and products
             for name, family in list(self.rmg_database.kinetics.families.items()):
-                logging.info(f"Trying to match reacction to {family}")
+                logging.info(f"Trying to match reaction to {family}")
                 for rmg_reactants, rmg_products in combos_to_try:
                     # Making a test reaction
                     test_reaction = rmgpy.reaction.Reaction(
-                        reactants=list(rmg_reactants), 
+                        reactants=list(rmg_reactants),
                         products=list(rmg_products))
 
-                    try: # Trying to label the reaction
+                    try:  # Trying to label the reaction
                         labeled_r, labeled_p = family.get_labeled_reactants_and_products(
                             test_reaction.reactants, test_reaction.products)
-                    except: # Failed to match a reaction to the family
+                    except:  # Failed to match a reaction to the family
                         logging.error(f"Couldn't match {test_reaction} to {name}, trying different combination...")
                         continue
-                        
+
                     if not (labeled_r and labeled_p):
                         # Catching an error where it matched the reaction but the reactants and products we not return...
                         # A weird bug in RMG that I can explain
                         continue
 
-                    if ((len(labeled_r) > 0) and (len(labeled_p) > 0)): # We found a match.
-                        if match: 
-                            # We found a match already, but we were able to label the reaction again... 
-                            # This would happen if different combinations of resonance structures match up 
+                    if ((len(labeled_r) > 0) and (len(labeled_p) > 0)):  # We found a match.
+                        if match:
+                            # We found a match already, but we were able to label the reaction again...
+                            # This would happen if different combinations of resonance structures match up
                             logging.warning("This reaction has been already labeled... \
                                 it seems that resonance structures \for reactants and products exist.")
                             logging.warning("Skipping this duplicate for now")
@@ -371,10 +374,10 @@ class Reaction():
                         labeled_reactants = deepcopy(labeled_r)
                         labeled_products = deepcopy(labeled_p)
                         match_reaction = rmgpy.reaction.Reaction(
-                            reactants=deepcopy(labeled_r), 
+                            reactants=deepcopy(labeled_r),
                             products=deepcopy(labeled_p))
                         # Setting it true that we matche the reaction and remembering the
-                        # RMG reaction family and family name 
+                        # RMG reaction family and family name
                         match = True
                         final_family = family
                         final_name = name
