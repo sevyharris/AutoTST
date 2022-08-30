@@ -589,7 +589,7 @@ class Reaction():
                 logging.warning("that didn't work")
             # conformer.ase_molecule.set_calculator(ase_calculator)
             conformer.ase_molecule.calc = ase_calculator
-            conformers = systematic_search(conformer, delta=120)
+            conformers = systematic_search(conformer, delta=120, max_combos=100, max_conformers=10)
             for conformer in conformers:
                 conformer.direction = direction
             self.ts[direction] = conformers

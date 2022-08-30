@@ -191,7 +191,7 @@ class Species():
         for smiles, conformers in self.conformers.items():
             conformer = conformers[0]
             conformer.ase_molecule.set_calculator(ase_calculator)
-            conformers = systematic_search(conformer)
+            conformers = systematic_search(conformer, max_combos=100, max_conformers=10)
             self.conformers[smiles] = conformers
 
         return self.conformers

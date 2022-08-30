@@ -232,6 +232,8 @@ def systematic_search(conformer,
                       cistrans = True,
                       chiral_centers = True,
                       multiplicity = False,
+                      max_combos = -1,  # default is no maximum
+                      max_conformers = -1,  # default is no maximum
                       ):
     """
     Perfoms a systematic conformer analysis of a `Conformer` or a `TS` object
@@ -243,6 +245,8 @@ def systematic_search(conformer,
     - rmsd_cutoff (str or float): root mean square deviation of inter atomic positions 
     - cistrans (bool): indication of if one wants to consider cistrans bonds
     - chiral_centers (bool): indication of if one wants to consider chiral centers bonds
+    - max_combos is the maximum number of conformers to investigate with the cheap ase calculator
+    - max_conformers is the maximum number of conformers to return for detailed investigation
 
     Returns:
     - confs (list): a list of unique `Conformer` objects within 10 kcal/mol of the lowest energy conformer determined
@@ -286,6 +290,9 @@ def systematic_search(conformer,
         cistrans=cistrans,
         chiral_centers=chiral_centers)
 
+    if max_combos > 0 and len(combos) > max_combos:
+        combos = combos[0:max_combos]
+
     if len(combos) == 0:
         logging.info(
             "This species has no torsions, cistrans bonds, or chiral centers")
@@ -303,6 +310,8 @@ def systematic_search(conformer,
     conformers = {}
     combinations = {}
     logging.info(f"There are {len(combos)} possible conformers to investigate...")
+
+
     for index, combo in enumerate(combos):
 
         combinations[index] = combo
@@ -336,8 +345,10 @@ def systematic_search(conformer,
 
         copy_conf.update_coords_from("ase")
         copy_conf.ase_molecule.set_calculator(calc)
-  
+
         conformers[index] = copy_conf
+
+
     logging.info(f"Conformers to investigate: {len(conformers)}")
     num_threads = multiprocessing.cpu_count() - 1 or 1
     pool = multiprocessing.Pool(processes=num_threads)
@@ -379,6 +390,8 @@ def systematic_search(conformer,
         multiplicities = [conformer.rmg_molecule.multiplicity]
 
     confs = []
+    if max_conformers > 0 and len(df) < max_conformers:
+        df = df.sort_values('energy')[0:max_conformers]
     i = 0
     for conf in df.conformer:
         if multiplicity:
