@@ -738,10 +738,18 @@ class TSGroups(rmgpy.data.base.Database):
                     keys.append(key)
 
             if keys:
-                ts_distances = self.entries[keys[-1]].data
+                for key_index in range(-1, -100, -1):  # assume max 100 layers deep
+                    ts_distances = self.entries[keys[key_index]].data
+                    if 'd12' in ts_distances.distances.keys():
+                        return ts_distances
+                    logging.warning(f'No distance data found at {keys[key_index]}. Falling up tree node to {keys[key_index - 1]}')
+                else:
+                    ts_distances = self.entries['Root'].data
+                    logging.warning(f'No distance data found. Falling up to Root node')
             else:
                 ts_distances = self.entries['Root'].data
             return ts_distances
+
 
         template = self.get_reaction_template(reaction)
         reference_distances = self.top[0].data  # or something like that
