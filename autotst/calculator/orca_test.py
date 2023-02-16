@@ -29,10 +29,12 @@
 ##########################################################################
 
 import unittest
-import os, shutil
+import os
+import shutil
 
 from .orca import Orca
 from ..species import Conformer
+
 
 class TestOrca(unittest.TestCase):
 
@@ -48,15 +50,15 @@ class TestOrca(unittest.TestCase):
         base = 'CC{C}C'
         self.orca.conformer = Conformer(smiles='CC(C)C')
         self.orca.load_conformer_attributes()
-        self.assertTrue([charge,mult,label,base] == 
-                        [self.orca.charge,self.orca.mult,self.orca.label,self.orca.base])
+        self.assertTrue([charge, mult, label, base]
+                        == [self.orca.charge, self.orca.mult, self.orca.label, self.orca.base])
 
     def test_write_fod_input(self):
         if os.path.exists(self.orca.directory):
             shutil.rmtree(self.orca.directory)
         os.makedirs(self.orca.directory)
         self.orca.write_fod_input()
-        self.assertTrue(os.path.exists(os.path.join(self.orca.directory,'C_fod.inp')))
+        self.assertTrue(os.path.exists(os.path.join(self.orca.directory, 'C_fod.inp')))
 
     def test_check_normal_termination(self):
         path = os.path.expandvars(
@@ -67,13 +69,14 @@ class TestOrca(unittest.TestCase):
         path = os.path.expandvars(
             "$AUTOTST/test/bin/log-files/C_fod.log")
         fod = self.orca.read_fod_log(path)
-        self.assertEquals(float(0.000025),fod)
+        self.assertEquals(float(0.000025), fod)
 
     def tearDown(self):
 
         if os.path.exists(os.path.expandvars("$AUTOTST/autotst/calculator/fod")):
             shutil.rmtree(os.path.expandvars(
                 "$AUTOTST/autotst/calculator/fod"))
+
 
 if __name__ == "__main__":
     unittest.main(testRunner=unittest.TextTestRunner(verbosity=2))

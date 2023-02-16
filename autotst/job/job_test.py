@@ -28,7 +28,7 @@
 #
 ##########################################################################
 
-import os, sys, subprocess, shutil
+import os
 import unittest
 from autotst.reaction import Reaction, TS
 from autotst.species import Species, Conformer
@@ -38,6 +38,7 @@ from autotst.calculator.gaussian import Gaussian
 import multiprocessing
 import subprocess
 import time
+
 
 class JobTest(unittest.TestCase):
 
@@ -98,7 +99,7 @@ class JobTest(unittest.TestCase):
         self.assertTrue(True)
 
     def test_check_complete(self):
-        ### I don't know how to create alaises in a python script
+        # I don't know how to create alaises in a python script
         os.environ["TEST_STATUS"] = "None"
         self.assertFalse(self.job.check_complete("test1"))
         self.assertTrue(self.job.check_complete("test2"))
@@ -108,7 +109,7 @@ class JobTest(unittest.TestCase):
         result = self.job.submit("echo testing")
         self.assertTrue(result)
 
-    ### For conformers
+    # For conformers
     def test_submit_conformer(self):
         self.reaction.generate_reactants_and_products()
         conformer = list(self.reaction.reactants[0].conformers.values())[0][0]
@@ -122,7 +123,7 @@ class JobTest(unittest.TestCase):
         self.assertEqual(label, f"{conformer.smiles}_{conformer.index}")
 
     def test_calculate_conformer(self):
-        conformer = Conformer(smiles='CC',index=0)
+        conformer = Conformer(smiles='CC', index=0)
         result = self.job.calculate_conformer(conformer=conformer)
         self.assertTrue(result)
 
@@ -137,7 +138,7 @@ class JobTest(unittest.TestCase):
                     smiles,
                     smiles + ".log"
                 )))
-    
+
     def test_submit_transitionstate(self):
         ts = self.reaction.ts["forward"][0]
         ts.get_molecules()
@@ -169,8 +170,7 @@ class JobTest(unittest.TestCase):
         del self.reaction.ts["reverse"]
         result = self.job.calculate_reaction()
         self.assertTrue(result)
-    
+
+
 if __name__ == "__main__":
     unittest.main(testRunner=unittest.TextTestRunner(verbosity=2))
-
-

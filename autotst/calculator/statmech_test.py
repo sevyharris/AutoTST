@@ -28,11 +28,15 @@
 #
 ##########################################################################
 
-import unittest, os, sys, shutil
+import unittest
+import os
+import sys
+import shutil
 from ..reaction import Reaction
 from .statmech import StatMech
 import rmgpy.reaction
 import rmgpy.kinetics
+
 
 class TestStatMech(unittest.TestCase):
     def setUp(self):
@@ -53,15 +57,15 @@ class TestStatMech(unittest.TestCase):
             for smiles in sp.conformers.keys():
                 if not os.path.exists(os.path.join(directory, "species", smiles)):
                     os.makedirs(os.path.join(directory, "species", smiles))
-                if not os.path.exists(os.path.join(directory, "species", smiles, smiles+".log")):
+                if not os.path.exists(os.path.join(directory, "species", smiles, smiles + ".log")):
                     shutil.copy(
                         os.path.join(directory, "bin", "log-files", smiles + "_0.log"),
-                        os.path.join(directory, "species", smiles, smiles+".log")
+                        os.path.join(directory, "species", smiles, smiles + ".log")
                     )
 
         self.statmech = StatMech(
-            reaction = self.reaction,
-            directory = directory
+            reaction=self.reaction,
+            directory=directory
         )
 
     def tearDown(self):
@@ -76,7 +80,7 @@ class TestStatMech(unittest.TestCase):
                 for fi in files:
                     if fi.endswith(".symm"):
                         os.remove(os.path.join(head, fi))
-        except:
+        except OSError:
             None
 
     def test_write_conformer_file(self):
@@ -108,6 +112,7 @@ class TestStatMech(unittest.TestCase):
                     smiles + ".py"
                 ))
             )
+
     def test_write_ts_input(self):
         ts = self.reaction.ts["forward"][0]
         self.assertTrue(self.statmech.write_ts_input(ts))
@@ -137,7 +142,7 @@ class TestStatMech(unittest.TestCase):
                 conf = confs[0]
                 self.assertTrue(os.path.exists(os.path.join(
                     self.statmech.directory,
-                    "species", 
+                    "species",
                     conf.smiles,
                     conf.smiles + ".py"
                 )))
@@ -173,7 +178,7 @@ class TestStatMech(unittest.TestCase):
                 self.statmech.kinetics_job.reaction
             )
         )
+
+
 if __name__ == "__main__":
     unittest.main(testRunner=unittest.TextTestRunner(verbosity=2))
-
-    

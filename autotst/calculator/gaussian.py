@@ -44,12 +44,13 @@ import ase.calculators.gaussian
 
 import rmgpy
 import rmgpy.molecule
-import rmgpy.reaction 
+import rmgpy.reaction
+
 
 class Gaussian():
 
     def __init__(self,
-                 conformer=None, # Either a transition state or a conformer
+                 conformer=None,  # Either a transition state or a conformer
                  settings={
                      "method": "m062x",
                      "basis": "cc-pVTZ",
@@ -57,8 +58,8 @@ class Gaussian():
                      "nprocshared": 24,
                  },
                  convergence="",
-                 directory=".", #where you want input and log files to be written, default is current directory
-                 scratch=None  #where you want temporary files to be written
+                 directory=".",  # where you want input and log files to be written, default is current directory
+                 scratch=None  # where you want temporary files to be written
                  ):
 
         default_settings = {
@@ -84,15 +85,15 @@ class Gaussian():
         self.settings = settings
         self.convergence = convergence
         convergence_options = ["", "verytight", "tight", "loose"]
-        assert self.convergence.lower() in convergence_options,f"{self.convergence} is not among the supported convergence options {convergence_options}"
+        assert self.convergence.lower() in convergence_options, f"{self.convergence} is not among the supported convergence options {convergence_options}"
         self.directory = directory
 
-        try: 
+        try:
             if scratch is None:
                 self.scratch = os.environ['GAUSS_SCRDIR']
             else:
                 self.scratch = os.environ['GAUSS_SCRDIR'] = scratch
-        except:
+        except KeyError:
             if scratch is None:
                 self.scratch = '.'
             else:
@@ -137,9 +138,9 @@ class Gaussian():
             i, j = bond.atom_indices
             addsec += f"B {(i + 1)} {(j + 1)}\n"
 
-        i, j, k, l = torsion.atom_indices
+        i, j, k, ll = torsion.atom_indices
         addsec += "D {} {} {} {} S {} {}\n".format(
-            i + 1, j + 1, k + 1, l + 1, steps, float(step_size))
+            i + 1, j + 1, k + 1, ll + 1, steps, float(step_size))
 
         if isinstance(self.conformer, TS):
             extra = "Opt=(ts,CalcFC,ModRedun)"
@@ -200,7 +201,6 @@ class Gaussian():
         - calc (ase.calculators.gaussian.Gaussian): an ase.calculators.gaussian.Gaussian calculator with all of the proper setting specified
         """
 
-
         if isinstance(self.conformer, TS):
             logging.info(
                 "TS object provided, cannot obtain a species calculator for a TS")
@@ -235,7 +235,7 @@ class Gaussian():
             extra=f"opt=(calcfc,maxcycles=900,{self.convergence}) freq IOP(7/33=1,2/16=3) scf=(maxcycle=900)",
             multiplicity=self.conformer.rmg_molecule.multiplicity)
         ase_gaussian.atoms = self.conformer.ase_molecule
-        
+
         try:
             ase_gaussian.parameters['force']
         except KeyError:
@@ -273,8 +273,8 @@ class Gaussian():
         #     os.makedirs(new_scratch)
         # except OSError:
         #     pass
-        
-        #if self.conformer.reaction_family != "Some reaction family with 4 labeled atoms..."
+
+        # if self.conformer.reaction_family != "Some reaction family with 4 labeled atoms..."
         if self.conformer.reaction_family.lower() in ["h_abstraction", "intra_h_migration", "r_addition_multiplebond", "disproportionation"]:
             ind1 = self.conformer.rmg_molecule.get_labeled_atoms("*1")[0].sorting_label
             ind2 = self.conformer.rmg_molecule.get_labeled_atoms("*2")[0].sorting_label
@@ -536,7 +536,6 @@ class Gaussian():
             pth1End = sum(steps[:pth1[-1]])
             # Compare the reactants and products
             irc_parse = cclib.io.ccread(irc_path)
-
 
             atomcoords = irc_parse.atomcoords
             atomnos = irc_parse.atomnos

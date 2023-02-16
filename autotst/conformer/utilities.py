@@ -28,7 +28,10 @@
 #
 ##########################################################################
 
-import os, sys, logging, itertools
+import os
+import sys
+import logging
+import itertools
 import pandas as pd
 import numpy as np
 import autotst
@@ -48,7 +51,7 @@ def get_energy(conformer):
     - conformer (Conformer): the conformer object of interest
 
     Returns:
-    - energy (float): the corresponding energy of that conformer. 
+    - energy (float): the corresponding energy of that conformer.
         Will result in an error if there is no ASECalculator object attached to the ase_molecule
     """
 

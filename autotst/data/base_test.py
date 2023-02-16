@@ -39,9 +39,11 @@ from .base import QMData, DistanceData, TransitionStates, TransitionStateDeposit
 import rmgpy
 import rmgpy.data.rmg
 
+
 class TestQMData(unittest.TestCase):
     def setUp(self):
         self.qmdata = QMData()
+
     def test_init(self):
         self.assertEqual(self.qmdata.ground_state_degeneracy, 0)
         self.assertEqual(self.qmdata.number_of_atoms, 0)
@@ -78,8 +80,8 @@ class TestDistanceData(unittest.TestCase):
 
     def setUp(self):
         self.distancedata = DistanceData(
-            distances = {"d12": 1.0, "d13": 1.0, "d23": 1.0},
-            uncertainties = {"d12": 0.1, "d13": 0.1, "d23": 0.1}
+            distances={"d12": 1.0, "d13": 1.0, "d23": 1.0},
+            uncertainties={"d12": 0.1, "d13": 0.1, "d23": 0.1}
         )
 
     def test_add(self):
@@ -88,23 +90,25 @@ class TestDistanceData(unittest.TestCase):
             self.assertEqual(self.distancedata.distances[key], 2.0)
             self.assertEqual(self.distancedata.uncertainties[key], 0.2)
 
+
 class TestTransitionStates(unittest.TestCase):
     def setUp(self):
         rmg_database = rmgpy.data.rmg.RMGDatabase()
         rmg_database.load(
             rmgpy.settings['database.directory'],
             kinetics_families=[
-            "R_Addition_MultipleBond",
-            "H_Abstraction",
-            "intra_H_migration"
-        ],
+                "R_Addition_MultipleBond",
+                "H_Abstraction",
+                "intra_H_migration"
+            ],
             transport_libraries=[],
             reaction_libraries=[],
             seed_mechanisms=[],
             thermo_libraries=[
                 'primaryThermoLibrary',
                 'thermo_DFT_CCSDTF12_BAC',
-                'CBS_QB3_1dHR'],
+                'CBS_QB3_1dHR'
+            ],
             solvation=False,
         )
         self.rmg_database = rmg_database
@@ -148,6 +152,7 @@ class TestTransitionStates(unittest.TestCase):
         self.assertAlmostEquals(d13, distance_data.distances["d13"], places=1)
         self.assertAlmostEquals(d23, distance_data.distances["d23"], places=1)
 
+
 class TestTransitionStateDepository(unittest.TestCase):
 
     def setUp(self):
@@ -157,7 +162,7 @@ class TestTransitionStateDepository(unittest.TestCase):
             "file_path": os.path.join(
                 os.path.expandvars("$AUTOTST"), "database", "H_Abstraction", "TS_training", "reactions.py"
             ),
-            "local_context": {"DistanceData":DistanceData},
+            "local_context": {"DistanceData": DistanceData},
             "global_context": {'__builtins__': None}
         }
 
@@ -169,6 +174,7 @@ class TestTransitionStateDepository(unittest.TestCase):
             self.settings["global_context"]
         )
 
+
 class TestTSGroups(unittest.TestCase):
 
     def setUp(self):
@@ -179,9 +185,10 @@ class TestTSGroups(unittest.TestCase):
             "file_path": os.path.join(
                 os.path.expandvars("$AUTOTST"), "database", "H_Abstraction", "TS_groups.py"
             ),
-            "local_context": {"DistanceData":DistanceData},
+            "local_context": {"DistanceData": DistanceData},
             "global_context": {'__builtins__': None}
         }
+
     def test_load(self):
 
         self.ts_groups.load(
@@ -209,6 +216,7 @@ class TestTSGroups(unittest.TestCase):
         self.assertAlmostEquals(d12, distance_data.distances["d12"], places=1)
         self.assertAlmostEquals(d13, distance_data.distances["d13"], places=1)
         self.assertAlmostEquals(d23, distance_data.distances["d23"], places=1)
+
 
 if __name__ == "__main__":
     unittest.main(testRunner=unittest.TextTestRunner(verbosity=2))

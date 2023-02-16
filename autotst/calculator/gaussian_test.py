@@ -28,8 +28,11 @@
 #
 ##########################################################################
 
-import unittest, os, shutil,\
-     itertools, logging
+import unittest
+import os
+import shutil
+import itertools
+import logging
 import numpy as np
 import cclib.io
 
@@ -46,6 +49,7 @@ import rmgpy
 import rmgpy.molecule
 import rmgpy.reaction
 
+
 class TestGaussian(unittest.TestCase):
     def setUp(self):
         os.environ["PATH"] = os.path.expandvars("$AUTOTST/test/bin:") + os.environ["PATH"]
@@ -54,11 +58,12 @@ class TestGaussian(unittest.TestCase):
         ts.get_molecules()
         ts.get_geometries()
         self.gaussian = Gaussian(conformer=ts)
+
     def test_rotor_calc(self):
         autotst_gaussian_rotor = self.gaussian.get_rotor_calc()
         calc_dict = autotst_gaussian_rotor.todict()
-        self.assertIsInstance(autotst_gaussian_rotor,ase.calculators.gaussian.Gaussian)
-        self.assertIsInstance(calc_dict,dict)
+        self.assertIsInstance(autotst_gaussian_rotor, ase.calculators.gaussian.Gaussian)
+        self.assertIsInstance(calc_dict, dict)
         """
         default_settings = {
             "method": "m062x",
@@ -66,43 +71,43 @@ class TestGaussian(unittest.TestCase):
             "mem": "5GB",
             "nprocshared": 20,
         }
-        default_settings['multiplicity'] = 
+        default_settings['multiplicity'] =
         self.assertDictEqual(calc_dict,default_settings)
         """
     def test_conformer_calc(self):
         "Test that we create a Gaussian calculator for a Conformer optimization"
         autotst_gaussian_confomer = Gaussian(conformer=Conformer(smiles='CCC')).get_conformer_calc()
         calc_dict = autotst_gaussian_confomer.todict()
-        self.assertIsInstance(autotst_gaussian_confomer,ase.calculators.gaussian.Gaussian)
-        self.assertIsInstance(calc_dict,dict)
+        self.assertIsInstance(autotst_gaussian_confomer, ase.calculators.gaussian.Gaussian)
+        self.assertIsInstance(calc_dict, dict)
 
     def test_shell_calc(self):
         "Test that we create a Gaussian calculator for a TS Shell optimization"
         autotst_gaussian_shell = self.gaussian.get_shell_calc()
         calc_dict = autotst_gaussian_shell.todict()
-        self.assertIsInstance(autotst_gaussian_shell,ase.calculators.gaussian.Gaussian)
-        self.assertIsInstance(calc_dict,dict)
-    
+        self.assertIsInstance(autotst_gaussian_shell, ase.calculators.gaussian.Gaussian)
+        self.assertIsInstance(calc_dict, dict)
+
     def test_center_calc(self):
         "Test that we create a Gaussian calculator for a TS Center optimization"
         autotst_gaussian_center = self.gaussian.get_center_calc()
         calc_dict = autotst_gaussian_center.todict()
-        self.assertIsInstance(autotst_gaussian_center,ase.calculators.gaussian.Gaussian)
-        self.assertIsInstance(calc_dict,dict)
-    
+        self.assertIsInstance(autotst_gaussian_center, ase.calculators.gaussian.Gaussian)
+        self.assertIsInstance(calc_dict, dict)
+
     def test_overall_calc(self):
         "Test that we create a Gaussian calculator for a TS Overall optimization"
         autotst_gaussian_overall = self.gaussian.get_overall_calc()
         calc_dict = autotst_gaussian_overall.todict()
-        self.assertIsInstance(autotst_gaussian_overall,ase.calculators.gaussian.Gaussian)
-        self.assertIsInstance(calc_dict,dict)
+        self.assertIsInstance(autotst_gaussian_overall, ase.calculators.gaussian.Gaussian)
+        self.assertIsInstance(calc_dict, dict)
 
     def test_irc_calc(self):
         "Test that we create a Gaussian calculator for a TS IRC optimization"
         autotst_gaussian_irc = self.gaussian.get_irc_calc()
         calc_dict = autotst_gaussian_irc.todict()
-        self.assertIsInstance(autotst_gaussian_irc,ase.calculators.gaussian.Gaussian)
-        self.assertIsInstance(calc_dict,dict)
+        self.assertIsInstance(autotst_gaussian_irc, ase.calculators.gaussian.Gaussian)
+        self.assertIsInstance(calc_dict, dict)
 
     def tearDown(self):
         if os.path.exists(os.path.expandvars("$AUTOTST/autotst/calculator/ts")):
@@ -110,7 +115,6 @@ class TestGaussian(unittest.TestCase):
         if os.path.exists(os.path.expandvars("$AUTOTST/autotst/calculator/species")):
             shutil.rmtree(os.path.expandvars("$AUTOTST/autotst/calculator/species"))
 
+
 if __name__ == "__main__":
     unittest.main(testRunner=unittest.TextTestRunner(verbosity=2))
-    
-    

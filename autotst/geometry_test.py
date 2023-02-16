@@ -31,98 +31,136 @@
 import unittest
 from .geometry import Bond, Angle, Torsion, CisTrans, ChiralCenter
 
+
 class TestBond(unittest.TestCase):
     def setUp(self):
-        self.bond = Bond(index=1,
-                        atom_indices=[1,2],
-                        length=1.8,
-                        reaction_center=True,
-                        mask=[True,True,True])
+        self.bond = Bond(
+            index=1,
+            atom_indices=[1, 2],
+            length=1.8,
+            reaction_center=True,
+            mask=[True, True, True]
+        )
+
     def test_index(self):
-        self.assertIsInstance(self.bond.index,int)
+        self.assertIsInstance(self.bond.index, int)
+
     def test_atom_indices(self):
-        self.assertIsInstance(self.bond.atom_indices,list)
-        self.assertEqual(len(self.bond.atom_indices),2)
+        self.assertIsInstance(self.bond.atom_indices, list)
+        self.assertEqual(len(self.bond.atom_indices), 2)
+
     def test_length(self):
-        self.assertIsInstance(self.bond.length,float)
+        self.assertIsInstance(self.bond.length, float)
+
     def test_reaction_center(self):
-        self.assertIsInstance(self.bond.reaction_center,bool)
+        self.assertIsInstance(self.bond.reaction_center, bool)
+
     def test_mask(self):
-        self.assertIsInstance(self.bond.mask,list)
+        self.assertIsInstance(self.bond.mask, list)
+
 
 class TestAngle(unittest.TestCase):
     def setUp(self):
-        self.angle = Angle(index=1,
-                        atom_indices=[1,2],
-                        degree=90.0,
-                        reaction_center=True,
-                        mask=[True,True,True])
+        self.angle = Angle(
+            index=1,
+            atom_indices=[1, 2],
+            degree=90.0,
+            reaction_center=True,
+            mask=[True, True, True]
+        )
+
     def test_index(self):
-        self.assertIsInstance(self.angle.index,int)
+        self.assertIsInstance(self.angle.index, int)
+
     def test_atom_indices(self):
-        self.assertIsInstance(self.angle.atom_indices,list)
-        self.assertEqual(len(self.angle.atom_indices),2)
+        self.assertIsInstance(self.angle.atom_indices, list)
+        self.assertEqual(len(self.angle.atom_indices), 2)
+
     def test_length(self):
-        self.assertIsInstance(self.angle.degree,float)
+        self.assertIsInstance(self.angle.degree, float)
+
     def test_reaction_center(self):
-        self.assertIsInstance(self.angle.reaction_center,bool)
+        self.assertIsInstance(self.angle.reaction_center, bool)
+
     def test_mask(self):
-        self.assertIsInstance(self.angle.mask,list)
+        self.assertIsInstance(self.angle.mask, list)
+
 
 class TestTorsion(unittest.TestCase):
     def setUp(self):
-        self.torsion = Torsion(index=1,
-                        atom_indices=[1,2,3],
-                        dihedral=60.0,
-                        reaction_center=True,
-                        mask=[True,True,True])
+        self.torsion = Torsion(
+            index=1,
+            atom_indices=[1, 2, 3],
+            dihedral=60.0,
+            reaction_center=True,
+            mask=[True, True, True]
+        )
+
     def test_index(self):
-        self.assertIsInstance(self.torsion.index,int)
+        self.assertIsInstance(self.torsion.index, int)
+
     def test_atom_indices(self):
-        self.assertIsInstance(self.torsion.atom_indices,list)
-        self.assertEqual(len(self.torsion.atom_indices),3)
+        self.assertIsInstance(self.torsion.atom_indices, list)
+        self.assertEqual(len(self.torsion.atom_indices), 3)
+
     def test_length(self):
-        self.assertIsInstance(self.torsion.dihedral,float)
+        self.assertIsInstance(self.torsion.dihedral, float)
+
     def test_reaction_center(self):
-        self.assertIsInstance(self.torsion.reaction_center,bool)
+        self.assertIsInstance(self.torsion.reaction_center, bool)
+
     def test_mask(self):
-        self.assertIsInstance(self.torsion.mask,list)
+        self.assertIsInstance(self.torsion.mask, list)
+
 
 class TestCisTrans(unittest.TestCase):
     def setUp(self):
-        self.cistrans = CisTrans(index=1,
-                        atom_indices=[1,2,3],
-                        dihedral=60.0,
-                        reaction_center=True,
-                        stero='str',
-                        mask=[True,True,True])
+        self.cistrans = CisTrans(
+            index=1,
+            atom_indices=[1, 2, 3],
+            dihedral=60.0,
+            reaction_center=True,
+            stero='str',
+            mask=[True, True, True]
+        )
+
     def test_index(self):
-        self.assertIsInstance(self.cistrans.index,int)
+        self.assertIsInstance(self.cistrans.index, int)
+
     def test_atom_indices(self):
-        self.assertIsInstance(self.cistrans.atom_indices,list)
-        self.assertEqual(len(self.cistrans.atom_indices),3)
+        self.assertIsInstance(self.cistrans.atom_indices, list)
+        self.assertEqual(len(self.cistrans.atom_indices), 3)
+
     def test_length(self):
-        self.assertIsInstance(self.cistrans.dihedral,float)
+        self.assertIsInstance(self.cistrans.dihedral, float)
+
     def test_reaction_center(self):
-        self.assertIsInstance(self.cistrans.reaction_center,bool)
+        self.assertIsInstance(self.cistrans.reaction_center, bool)
+
     def test_mask(self):
-        self.assertIsInstance(self.cistrans.mask,list)
+        self.assertIsInstance(self.cistrans.mask, list)
+
     def test_stereo(self):
-        self.assertIsInstance(self.cistrans.stero,str)
+        self.assertIsInstance(self.cistrans.stero, str)
+
 
 class TestChiralCenter(unittest.TestCase):
     def setUp(self):
-        self.chiralcenter = ChiralCenter(index=1,
-                        atom_index=1,
-                        chirality='chirality')
+        self.chiralcenter = ChiralCenter(
+            index=1,
+            atom_index=1,
+            chirality='chirality'
+        )
+
     def test_index(self):
-        self.assertIsInstance(self.chiralcenter.index,int)
+        self.assertIsInstance(self.chiralcenter.index, int)
+
     def test_atom_index(self):
-        self.assertIsInstance(self.chiralcenter.atom_index,int)
+        self.assertIsInstance(self.chiralcenter.atom_index, int)
+
     def test_chirality(self):
-        self.assertIsInstance(self.chiralcenter.chirality,str)
-        
+        self.assertIsInstance(self.chiralcenter.chirality, str)
+
 
 if __name__ == "__main__":
     unittest.main(testRunner=unittest.TextTestRunner(verbosity=2))
-

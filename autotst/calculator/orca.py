@@ -41,7 +41,7 @@ class Orca():
                 directory='.',
                 nprocs=4,
                 mem=5):
-        
+
         self.command = 'orca'
         self.directory = directory
         if not os.path.exists(directory):
@@ -57,13 +57,13 @@ class Orca():
         self.nprocs = int(nprocs)
         self.mem = str(mem).upper()
         self.mem_per_proc = self.get_mem_per_proc()
-        
-    def get_mem_per_proc(self,mem=None,nprocs=None):
+
+    def get_mem_per_proc(self, mem=None, nprocs=None):
         """
         A method to calculate the memory per processor (in MB) for an Orca calculation.
         Returns mem_per_proc (int)
 
-        :param mem (str or int): Total memory available in GB or MB (Assumes GB if unitless).  
+        :param mem (str or int): Total memory available in GB or MB (Assumes GB if unitless).
         If not specified, self.mem will be used.
         :param nprocs (str or int): Number of processors.
         If not specified, self.nprocs will be used.
@@ -90,9 +90,9 @@ class Orca():
             mem_mb = float(mem.strip('MB'))
         else:  # assume GB
             mem_mb = float(mem) * 1000
-        
+
         # Calculate mem_per_proc
-        mem_per_proc = int(mem_mb/nprocs)
+        mem_per_proc = int(mem_mb / nprocs)
 
         # Return mem_per_proc
         return mem_per_proc
@@ -102,16 +102,16 @@ class Orca():
 
     def load_conformer_attributes(self):
         """
-        A method that loads attributes from a conformer attatched to an Orca calculator instance. 
+        A method that loads attributes from a conformer attatched to an Orca calculator instance.
         Orca calculator instance must be initialized with or provided an AutoTST conformer before calling this method.
         The method tries to get smiles, charge, multiplicity, and coordinates from the conformer.
         If found, it creates an attribute for that property.
         """
 
         # Assert AutoTST conformer is attached to Orca Calculator
-        assert self.conformer is not None,'Must provide an AutoTST conformer object'
-        assert isinstance(self.conformer,Conformer),'conformer must be an autotst conformer object'
-        
+        assert self.conformer is not None, 'Must provide an AutoTST conformer object'
+        assert isinstance(self.conformer, Conformer), 'conformer must be an autotst conformer object'
+
         # Assign smiles or reaction label as label attribute
         if isinstance(self.conformer, TS):
             self.label = self.conformer.reaction_label
@@ -123,7 +123,7 @@ class Orca():
             self.base = self.label.replace('(', '{').replace(')', '}').replace('#', '=-')
         else:
             self.base = self.label
-  
+
         self.charge = self.conformer.rmg_molecule.get_net_charge()
         self.mult = self.conformer.rmg_molecule.multiplicity
 
@@ -134,18 +134,18 @@ class Orca():
             self.coords = None
 
 
-    def write_fod_input(self,directory=None):
+    def write_fod_input(self, directory=None):
         """
         Generates input files to run finite temperaure DFT to determine the Fractional Occupation number weighted Density (FOD number).
         Uses the default functional, basis set, and SmearTemp (TPSS, def2-TZVP, 5000 K) in Orca.
         See resource for more information:
-        Bauer, C. A., Hansen, A., & Grimme, S. (2017). The Fractional Occupation Number Weighted Density as a Versatile Analysis Tool for Molecules with a Complicated Electronic Structure. 
+        Bauer, C. A., Hansen, A., & Grimme, S. (2017). The Fractional Occupation Number Weighted Density as a Versatile Analysis Tool for Molecules with a Complicated Electronic Structure.
         Chemistry - A European Journal, 23(25), 6150–6164. https://doi.org/10.1002/chem.201604682
         """
 
         # Make sure we have required properties of conformer to run the job
-        assert None not in [self.mult,self.charge,self.coords]
-        
+        assert None not in [self.mult, self.charge, self.coords]
+
         # If directory is not specified, use the instance directory
         if directory is None:
             directory = self.directory
@@ -154,7 +154,7 @@ class Orca():
                 os.makedirs(directory)
 
         # Path for FOD input file
-        outfile = os.path.join(directory,self.label+'_fod.inp')
+        outfile = os.path.join(directory, self.label + '_fod.inp')
 
         # Write FOD input
         with open(outfile, 'w+') as f:
@@ -168,31 +168,31 @@ class Orca():
             f.write(self.coords)
             f.write('*\n')
 
-    def check_normal_termination(self,path):
+    def check_normal_termination(self, path):
         """
         checks if an Orca job terminated normally.
         Returns True is normal termination and False if something went wrong.
         """
         assert os.path.exists(path), f'It seems {path} is not a valid path'
 
-        lines = open(path,'r').readlines()[-5:]
+        lines = open(path, 'r').readlines()[-5:]
         complete = False
         for line in lines:
             if "ORCA TERMINATED NORMALLY" in line:
                 complete = True
                 break
         return complete
-        
-    def read_fod_log(self,path):
+
+    def read_fod_log(self, path):
         """
         Reads an FOD log to get the FOD number.
         Returns FOD number if log terminated normally and FOD number can be found.
         """
-        assert os.path.exists(path),f'It seems {path} is not a valid path'
+        assert os.path.exists(path), f'It seems {path} is not a valid path'
 
         if self.check_normal_termination(path):
             N_FOD = None
-            for line in open(path,'r').readlines():
+            for line in open(path, 'r').readlines():
                 if 'N_FOD =' in line:
                     N_FOD = float(line.split(" ")[-1])
                     break
@@ -203,4 +203,4 @@ class Orca():
                 logging.info(f"It appears that the orca terminated normally for {path}, but we couldn't find the FOD number")
         else:
             logging.info(f'It appears the orca FOD job for {path} did not terminate normally')
-            
+

@@ -30,7 +30,7 @@
 
 from .geometry import CisTrans, Torsion, Angle, Bond, ChiralCenter
 import numpy as np
-import os, logging
+import logging
 
 import rdkit
 import rdkit.Chem
@@ -40,7 +40,7 @@ import autotst
 import ase
 import rmgpy
 import rmgpy.molecule
-import rmgpy.species 
+import rmgpy.species
 
 FORMAT = "%(filename)s:%(lineno)d %(funcName)s %(levelname)s %(message)s"
 logging.basicConfig(format=FORMAT, level=logging.INFO)
@@ -76,14 +76,14 @@ class Species():
                 rmg_species = rmgpy.species.Species(molecule=[rmg_species])
                 try:
                     rmg_species.generate_resonance_structures()
-                except:
+                except ValueError:
                     logging.info(
                         "Could not generate resonance structures for this species... Using molecule provided")
 
             else:
                 try:
                     rmg_species.generate_resonance_structures()
-                except:
+                except ValueError:
                     logging.info(
                         "Could not generate resonance structures for this species... Using molecule provided")
 
@@ -115,14 +115,14 @@ class Species():
                 rmg_species = rmgpy.species.Species(molecule=[rmg_species])
                 try:
                     rmg_species.generate_resonance_structures()
-                except:
+                except ValueError:
                     logging.info(
                         "Could not generate resonance structures for this species... Using molecule provided")
 
             else:
                 try:
                     rmg_species.generate_resonance_structures()
-                except:
+                except ValueError:
                     logging.info(
                         "Could not generate resonance structures for this species... Using molecule provided")
 
@@ -327,11 +327,11 @@ class Conformer():
     def get_xyz_block(self):
         """
         A method for retrieving an XYZ coodinate block from an ase mol
-        
+
         Returns:
             str: XYZ coordinates
         """
-        
+
         if not self.ase_molecule:
             self.get_ase_mol()
         ase_molecule = self.ase_molecule
@@ -430,35 +430,35 @@ class Conformer():
         self.angles = angles
         return self.angles
 
-    def get_torsions(self,tol=5.0):
+    def get_torsions(self, tol=5.0):
         """
         A method for identifying all of the torsions in a conformer
         """
 
         def check_angles(tor):
             """
-            Checks for linearity in torsion angles.  If angle is close to 180 degrees, 
+            Checks for linearity in torsion angles.  If angle is close to 180 degrees,
             the tuple index corresponding to the the endpoint atom of that angle is returned in a list.
             """
-            i,j,k,l = tor
-            angles = ((0,self.ase_molecule.get_angle(i, j, k)), (-1,self.ase_molecule.get_angle(j, k, l)))
+            i, j, k, ll = tor
+            angles = ((0, self.ase_molecule.get_angle(i, j, k)), (-1, self.ase_molecule.get_angle(j, k, ll)))
             endpoints = []
-            for index,angle in angles:
-                if abs(angle-180) <= tol:  # we have a linear angle and invalid torsion
+            for index, angle in angles:
+                if abs(angle - 180) <= tol:  # we have a linear angle and invalid torsion
                     endpoints.append(index)
             return endpoints
 
         torsion_list = []
 
         try:
-            if self.rmg_molecule.is_linear(): # No torsions if linear molecule
-                self.torsions  = []
+            if self.rmg_molecule.is_linear():  # No torsions if linear molecule
+                self.torsions = []
                 return []
-        except:
+        except ValueError:
             pass
 
         for bond1 in self.rdkit_molecule.GetBonds():
-            
+
             # Make sure the bond is single and rotatable
             if str(bond1.GetBondType()) != 'SINGLE':
                 continue
@@ -522,52 +522,52 @@ class Conformer():
                 torsion_tup = (atom0.GetIdx(), atom1.GetIdx(),
                                atom2.GetIdx(), atom3.GetIdx())
 
-                endpoints = check_angles(torsion_tup) # check to see if we have any near-linear angles
+                endpoints = check_angles(torsion_tup)  # check to see if we have any near-linear angles
                 center_atoms = []
                 valid_torsion = True
-   
-                while len(endpoints) > 0: # while we have a near-linear angle in the torsion...
-                    
-                    reached_the_end = [False for i in range(len(endpoints))] 
-                    for i,index in enumerate(endpoints):
-                        if index == 0: # angle i,j,k is near-linear
-                            vertex = torsion_tup[1] # vertex of angle is j
+
+                while len(endpoints) > 0:  # while we have a near-linear angle in the torsion...
+
+                    reached_the_end = [False for i in range(len(endpoints))]
+                    for i, index in enumerate(endpoints):
+                        if index == 0:  # angle i,j,k is near-linear
+                            vertex = torsion_tup[1]  # vertex of angle is j
                         else:  # angle j,k,l is near-linear
-                            vertex = torsion_tup[2] # vertex of angle is k
-                        atom_id = torsion_tup[index] # index of endpoint atom (i or l)
-                        atom = self.rdkit_molecule.GetAtomWithIdx(atom_id) # retrieve endpoint atom
-                        bonds = list(atom.GetBonds()) # get atoms connected to endpoint atoms
+                            vertex = torsion_tup[2]  # vertex of angle is k
+                        atom_id = torsion_tup[index]  # index of endpoint atom (i or l)
+                        atom = self.rdkit_molecule.GetAtomWithIdx(atom_id)  # retrieve endpoint atom
+                        bonds = list(atom.GetBonds())  # get atoms connected to endpoint atoms
                         got_one = False
                         for bond in bonds:
                             atomX = bond.GetOtherAtom(atom)
-                            if atomX.GetIdx() != vertex: # make sure we do not go backwards
+                            if atomX.GetIdx() != vertex:  # make sure we do not go backwards
                                 got_one = True
                                 break
-            
-                        if got_one is True: # we found a new atom
+
+                        if got_one is True:  # we found a new atom
                             if index == 0:  # angle i,j,k was near-linear
-                                center_atoms.append(torsion_tup[1]) # we are skipping over j and adding to center atoms
+                                center_atoms.append(torsion_tup[1])  # we are skipping over j and adding to center atoms
                                 torsion_tup = (atomX.GetIdx(),) + \
-                                (torsion_tup[0], torsion_tup[2], torsion_tup[3]) # new torsion atom indicies
+                                    (torsion_tup[0], torsion_tup[2], torsion_tup[3])  # new torsion atom indicies
                             else:  # angle j,k,l was near-linear
                                 center_atoms.append(torsion_tup[2])  # we are skipping over k and adding to center atoms
                                 torsion_tup = (
                                     torsion_tup[0], torsion_tup[1], torsion_tup[3]) \
-                                    + (atomX.GetIdx(),) # new torsion atom indicies
-                        else: # we did not find a new atom because atom endpoint atom is terminal
-                            reached_the_end[i] = True # we reached the end of the molecule
+                                    + (atomX.GetIdx(),)  # new torsion atom indicies
+                        else:  # we did not find a new atom because atom endpoint atom is terminal
+                            reached_the_end[i] = True  # we reached the end of the molecule
 
-                    if all(reached_the_end): # We reached the end of the molecule and still have linear angle
+                    if all(reached_the_end):  # We reached the end of the molecule and still have linear angle
                         valid_torsion = False
                         break
-                    
+
                     endpoints = check_angles(torsion_tup)
 
                 if not valid_torsion:
                     continue
 
                 already_in_list = False
-                i, j, k, l = torsion_tup
+                i, j, k, ll = torsion_tup
                 for torsion in torsion_list:
                     a, b, c, d = torsion.atom_indices
                     if (b, c) == (j, k) or (b, c) == (k, j):
@@ -575,7 +575,7 @@ class Conformer():
                         break
 
                 if not already_in_list:
-                    dihedral = self.ase_molecule.get_dihedral(i, j, k, l)
+                    dihedral = self.ase_molecule.get_dihedral(i, j, k, ll)
                     tor = Torsion(atom_indices=torsion_tup,
                                   dihedral=dihedral,
                                   center_atoms=center_atoms,
@@ -586,7 +586,7 @@ class Conformer():
         for index, tor in enumerate(torsion_list):
             tor.index = index
             tor.mask = self.get_mask(tor)
-        
+
         self.torsions = torsion_list
         return torsion_list
 
@@ -675,11 +675,11 @@ class Conformer():
         cistrans = []
 
         for ct_index, indices in enumerate(cistrans_list):
-            i, j, k, l = indices
+            i, j, k, ll = indices
 
             b0 = self.rdkit_molecule.GetBondBetweenAtoms(i, j)
             b1 = self.rdkit_molecule.GetBondBetweenAtoms(j, k)
-            b2 = self.rdkit_molecule.GetBondBetweenAtoms(k, l)
+            b2 = self.rdkit_molecule.GetBondBetweenAtoms(k, ll)
 
             b0.SetBondDir(rdkit.Chem.BondDir.ENDUPRIGHT)
             b2.SetBondDir(rdkit.Chem.BondDir.ENDDOWNRIGHT)
@@ -687,7 +687,7 @@ class Conformer():
             rdkit.Chem.AssignStereochemistry(self.rdkit_molecule, force=True)
 
             if "STEREOZ" in str(b1.GetStereo()):
-                if round(self.ase_molecule.get_dihedral(i, j, k, l), -1) == 0:
+                if round(self.ase_molecule.get_dihedral(i, j, k, ll), -1) == 0:
                     atom = self.rdkit_molecule.GetAtomWithIdx(k)
                     bonds = atom.GetBonds()
                     for bond in bonds:
@@ -695,21 +695,21 @@ class Conformer():
                             bond.GetBeginAtomIdx(),
                             bond.GetEndAtomIdx()]
                         if not ((sorted([j, k]) == sorted(indexes)) or (
-                                sorted([k, l]) == sorted(indexes))):
+                                sorted([k, ll]) == sorted(indexes))):
                             break
 
                     for index in indexes:
                         if not (index in indices):
-                            l = index
+                            ll = index
                             break
 
-                indices = [i, j, k, l]
+                indices = [i, j, k, ll]
                 stero = "Z"
 
             else:
                 if round(
                     self.ase_molecule.get_dihedral(
-                        i, j, k, l), -1) == 180:
+                        i, j, k, ll), -1) == 180:
                     atom = self.rdkit_molecule.GetAtomWithIdx(k)
                     bonds = atom.GetBonds()
                     for bond in bonds:
@@ -717,18 +717,18 @@ class Conformer():
                             bond.GetBeginAtomIdx(),
                             bond.GetEndAtomIdx()]
                         if not ((sorted([j, k]) == sorted(indexes)) or (
-                                sorted([k, l]) == sorted(indexes))):
+                                sorted([k, ll]) == sorted(indexes))):
                             break
 
                     for index in indexes:
                         if not (index in indices):
-                            l = index
+                            ll = index
                             break
 
-                indices = [i, j, k, l]
+                indices = [i, j, k, ll]
                 stero = "E"
 
-            dihedral = self.ase_molecule.get_dihedral(i, j, k, l)
+            dihedral = self.ase_molecule.get_dihedral(i, j, k, ll)
             tor = CisTrans(index=ct_index,
                            atom_indices=indices,
                            dihedral=dihedral,
@@ -753,7 +753,7 @@ class Conformer():
         Getting the right hand mask for a geometry object:
 
         - self: an AutoTST Conformer object
-        - geometry: a Bond, Angle, Dihedral, or Torsion object 
+        - geometry: a Bond, Angle, Dihedral, or Torsion object
 
 
         """
@@ -854,8 +854,8 @@ class Conformer():
         """
         rdkit_dm = rdkit.Chem.rdmolops.Get3DDistanceMatrix(self.rdkit_molecule)
         ase_dm = self.ase_molecule.get_all_distances()
-        l = len(self.rmg_molecule.atoms)
-        rmg_dm = np.zeros((l, l))
+        ll = len(self.rmg_molecule.atoms)
+        rmg_dm = np.zeros((ll, ll))
 
         for i, atom_i in enumerate(self.rmg_molecule.atoms):
             for j, atom_j in enumerate(self.rmg_molecule.atoms):
@@ -1012,12 +1012,12 @@ class Conformer():
             logging.info("Torsion index provided is out of range. Nothing was changed.")
             return self
 
-        i, j, k, l = torsion.atom_indices
+        i, j, k, ll = torsion.atom_indices
         self.ase_molecule.set_dihedral(
             a1=i,
             a2=j,
             a3=k,
-            a4=l,
+            a4=ll,
             angle=dihedral,
             mask=torsion.mask
         )
@@ -1051,12 +1051,12 @@ class Conformer():
 
         else:
             cistrans.stero = stero.upper()
-            i, j, k, l = cistrans.atom_indices
+            i, j, k, ll = cistrans.atom_indices
             self.ase_molecule.rotate_dihedral(
                 a1=i,
                 a2=j,
                 a3=k,
-                a4=l,
+                a4=ll,
                 angle=float(180),
                 mask=cistrans.mask
             )
@@ -1104,13 +1104,13 @@ class Conformer():
         # Now resetting dihedral angles in case if they changed.
 
         for torsion in old_torsions:
-            i, j, k, l = torsion.atom_indices
+            i, j, k, ll = torsion.atom_indices
 
             self.ase_molecule.set_dihedral(
                 a1=i,
                 a2=j,
                 a3=k,
-                a4=l,
+                a4=ll,
                 mask=torsion.mask,
                 angle=torsion.dihedral,
             )
@@ -1130,6 +1130,6 @@ class Conformer():
             species = rmgpy.species.Species(molecule=[mol])
             self._symmetry_number = species.get_symmetry_number()
         except ValueError:
-            self._symmetry_number = mol.get_symmetry_number() 
+            self._symmetry_number = mol.get_symmetry_number()
 
         return self._symmetry_number

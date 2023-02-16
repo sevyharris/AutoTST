@@ -28,7 +28,6 @@
 #
 ##########################################################################
 
-import os, sys
 import unittest
 import ase
 import rdkit.Chem.rdchem
@@ -38,12 +37,13 @@ import rmgpy.data.rmg
 from .reaction import Reaction, TS
 from .data.base import TransitionStates
 
+
 class TestReaction(unittest.TestCase):
     def setUp(self):
         self.reaction = Reaction("CC+[O]O_[CH2]C+OO")
         self.reaction2 = Reaction(rmg_reaction=rmgpy.reaction.Reaction(
-            reactants = [rmgpy.molecule.Molecule(smiles="CC"), rmgpy.molecule.Molecule(smiles="[O]O")],
-            products = [rmgpy.molecule.Molecule(smiles="[CH2]C"), rmgpy.molecule.Molecule(smiles="OO")]
+            reactants=[rmgpy.molecule.Molecule(smiles="CC"), rmgpy.molecule.Molecule(smiles="[O]O")],
+            products=[rmgpy.molecule.Molecule(smiles="[CH2]C"), rmgpy.molecule.Molecule(smiles="OO")]
         ))
 
     def test_label(self):
@@ -56,7 +56,7 @@ class TestReaction(unittest.TestCase):
                 rmgpy.molecule.Molecule(smiles="CC"),
                 rmgpy.molecule.Molecule(smiles="[O]O")
             ],
-            products = [
+            products=[
                 rmgpy.molecule.Molecule(smiles="[CH2]C"),
                 rmgpy.molecule.Molecule(smiles="OO")
             ]
@@ -64,7 +64,6 @@ class TestReaction(unittest.TestCase):
 
         self.assertTrue(test_reaction.is_isomorphic(self.reaction.get_rmg_reaction()))
         self.assertTrue(test_reaction.is_isomorphic(self.reaction2.get_rmg_reaction()))
-
 
     def test_databases(self):
         rmg_database, ts_databases = self.reaction.load_databases()
@@ -81,7 +80,7 @@ class TestReaction(unittest.TestCase):
 
     def test_disance_data(self):
         d12 = 1.38
-        d13 = 2.43 
+        d13 = 2.43
         # d13 in reactionTest is smaller than the distance in baseTest.py because
         # d13 is edited to be smaller in reaction.py. The value returned from the database
         # is ~2.53 but is reduced to 2.43 when called from the reaction object itself
@@ -116,7 +115,7 @@ class TestReaction(unittest.TestCase):
                 rmgpy.molecule.Molecule(smiles="CC"),
                 rmgpy.molecule.Molecule(smiles="[O]O")
             ],
-            products = [
+            products=[
                 rmgpy.molecule.Molecule(smiles="[CH2]C"),
                 rmgpy.molecule.Molecule(smiles="OO")
             ]
@@ -135,7 +134,6 @@ class TestReaction(unittest.TestCase):
         self.assertTrue(merged.get_labeled_atoms("*3")[0].is_carbon())
         self.assertTrue(merged.get_labeled_atoms("*2")[0].is_hydrogen())
         self.assertTrue(merged.get_labeled_atoms("*1")[0].is_oxygen)
-
 
         labeled_reaction, reaction_family = self.reaction2.get_labeled_reaction()
 
@@ -179,7 +177,6 @@ class TestReaction(unittest.TestCase):
         self.assertEquals(len(self.reaction.complexes["forward"].get_all_labeled_atoms()), 3)
         self.assertEquals(len(self.reaction.complexes["reverse"].get_all_labeled_atoms()), 3)
 
-
         self.reaction2.get_labeled_reaction()
         self.reaction2.get_rmg_complexes()
 
@@ -205,33 +202,34 @@ class TestReaction(unittest.TestCase):
         reaction = Reaction("C#C+[OH]_[CH]=CO")
         _, family = reaction.get_labeled_reaction()
         self.assertEqual(family.lower(), "R_Addition_MultipleBond".lower())
-        
+
         # intra_H_migration
         reaction = Reaction("C[CH]O_CC[O]")
         _, family = reaction.get_labeled_reaction()
         self.assertEqual(family.lower(), "intra_H_migration".lower())
+
 
 class TestTS(unittest.TestCase):
 
     def setUp(self):
         self.reaction = Reaction("CC+[O]O_[CH2]C+OO")
         self.reaction2 = Reaction(rmg_reaction=rmgpy.reaction.Reaction(
-            reactants = [rmgpy.molecule.Molecule(smiles="CC"), rmgpy.molecule.Molecule(smiles="[O]O")],
-            products = [rmgpy.molecule.Molecule(smiles="[CH2]C"), rmgpy.molecule.Molecule(smiles="OO")]
+            reactants=[rmgpy.molecule.Molecule(smiles="CC"), rmgpy.molecule.Molecule(smiles="[O]O")],
+            products=[rmgpy.molecule.Molecule(smiles="[CH2]C"), rmgpy.molecule.Molecule(smiles="OO")]
         ))
         self.ts = self.reaction.ts["forward"][0]
         self.ts2 = self.reaction.ts["forward"][0]
         self.ts.get_molecules()
         self.ts2.get_molecules()
-        
+
     def test_reaction_label(self):
         self.assertEquals(self.ts.reaction_label, "CC+[O]O_[CH2]C+OO")
         self.assertEquals(self.ts2.reaction_label, "CC+[O]O_[CH2]C+OO")
-    
+
     def test_smiles(self):
         self.assertEquals(self.ts.smiles, "CC.[O]O")
         self.assertEquals(self.ts2.smiles, "CC.[O]O")
-    
+
     def test_rdkit_molecule(self):
         rdkit_molecule = self.ts.rdkit_molecule
         self.assertIsInstance(rdkit_molecule, rdkit.Chem.rdchem.Mol)
@@ -242,7 +240,7 @@ class TestTS(unittest.TestCase):
         self.assertIsInstance(rdkit_molecule, rdkit.Chem.rdchem.Mol)
         self.assertEquals(len(rdkit_molecule.GetAtoms()), 11)
         self.assertEquals(len(rdkit_molecule.GetBonds()), 9)
-    
+
     def test_pseudo_geometry(self):
         self.assertIsInstance(self.ts._pseudo_geometry, rdkit.Chem.rdchem.RWMol)
         self.assertEquals(len(self.ts._pseudo_geometry.GetBonds()), 10)
@@ -258,20 +256,20 @@ class TestTS(unittest.TestCase):
         ase_molecule = self.ts2.ase_molecule
         self.assertIsInstance(ase_molecule, ase.Atoms)
         self.assertEquals(len(ase_molecule.get_atomic_numbers()), 11)
-    
+
     def test_symmetry_number(self):
         self.assertEquals(self.ts.symmetry_number, 1)
         self.assertEquals(self.ts2.symmetry_number, 1)
 
         reactions_to_test = {
-            "[CH3]+[OH]_C+[O]" : 3,
+            "[CH3]+[OH]_C+[O]": 3,
             # TODO add other reactions here
         }
         for reaction_string, expected_symmetry in reactions_to_test.items():
             rxn = Reaction(reaction_string)
-            rxn.get_labeled_reaction() 
+            rxn.get_labeled_reaction()
             ts = rxn.ts["forward"][0]
-            self.assertEquals(ts.symmetry_number, expected_symmetry) 
+            self.assertEquals(ts.symmetry_number, expected_symmetry)
 
     def test_bounds_matrix(self):
 
@@ -288,12 +286,11 @@ class TestTS(unittest.TestCase):
 
         bm = self.ts.bm
         low, high = sorted([lbl1, lbl2])
-        self.assertAlmostEqual(d12, bm[low, high], delta=u12/2 )
+        self.assertAlmostEqual(d12, bm[low, high], delta=u12 / 2)
         low, high = sorted([lbl1, lbl3])
-        self.assertAlmostEqual(d13, bm[low, high], delta=u13/2 )
+        self.assertAlmostEqual(d13, bm[low, high], delta=u13 / 2)
         low, high = sorted([lbl2, lbl3])
-        self.assertAlmostEqual(d23, bm[low, high], delta=u23/2 )
-
+        self.assertAlmostEqual(d23, bm[low, high], delta=u23 / 2)
 
         lbl1 = self.ts2.rmg_molecule.get_labeled_atoms("*1")[0].sorting_label
         lbl2 = self.ts2.rmg_molecule.get_labeled_atoms("*2")[0].sorting_label
@@ -308,23 +305,25 @@ class TestTS(unittest.TestCase):
 
         bm = self.ts2.bm
         low, high = sorted([lbl1, lbl2])
-        self.assertAlmostEqual(d12, bm[low, high], delta=u12/2 )
+        self.assertAlmostEqual(d12, bm[low, high], delta=u12 / 2)
         low, high = sorted([lbl1, lbl3])
-        self.assertAlmostEqual(d13, bm[low, high], delta=u13/2 )
+        self.assertAlmostEqual(d13, bm[low, high], delta=u13 / 2)
         low, high = sorted([lbl2, lbl3])
-        self.assertAlmostEqual(d23, bm[low, high], delta=u23/2 )
-        
+        self.assertAlmostEqual(d23, bm[low, high], delta=u23 / 2)
+
     def test_get_bonds(self):
         self.assertEqual(len(self.ts.get_bonds()), 10)
         true_count = 0
         for bond in self.ts.get_bonds():
-            if bond.reaction_center: true_count += 1
+            if bond.reaction_center:
+                true_count += 1
         self.assertEqual(true_count, 2)
 
         self.assertEqual(len(self.ts2.get_bonds()), 10)
         true_count = 0
         for bond in self.ts2.get_bonds():
-            if bond.reaction_center: true_count += 1
+            if bond.reaction_center:
+                true_count += 1
         self.assertEqual(true_count, 2)
 
     def test_get_angles(self):
@@ -338,4 +337,3 @@ class TestTS(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(testRunner=unittest.TextTestRunner(verbosity=2))
-

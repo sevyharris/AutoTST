@@ -40,15 +40,13 @@ import rmgpy.molecule
 import rmgpy.species
 import rmgpy.reaction
 import rmgpy.kinetics
-import rmgpy.statmech 
+import rmgpy.statmech
 
 
 def get_possible_names(reactants, products):
 
-    joined_react_orders = ['+'.join(order)
-                         for order in itertools.permutations(reactants)]
-    joined_prod_orders = ['+'.join(order)
-                        for order in itertools.permutations(products)]
+    joined_react_orders = ['+'.join(order) for order in itertools.permutations(reactants)]
+    joined_prod_orders = ['+'.join(order) for order in itertools.permutations(products)]
     file_names = [
         '_'.join(
             (r_jo, p_jo)) for r_jo in joined_react_orders for p_jo in joined_prod_orders] + [
@@ -221,7 +219,7 @@ class InputOutput():
                     'True': True,
                     'False': False,
                     'Reaction': rmgpy.reaction.Reaction,
-                    'TemplateReaction' : rmgpy.data.kinetics.TemplateReaction,
+                    'TemplateReaction': rmgpy.data.kinetics.TemplateReaction,
                     'Species': rmgpy.species.Species,
                     'TransitionState': rmgpy.species.TransitionState,
                     'Arrhenius': rmgpy.kinetics.Arrhenius,

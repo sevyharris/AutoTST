@@ -28,24 +28,26 @@
 #
 ##########################################################################
 
-import os, itertools, logging
+import os
+import itertools
+import logging
 import numpy as np
 from copy import deepcopy
 
 import rdkit
-import rdkit.Chem 
+import rdkit.Chem
 import rdkit.Chem.AllChem
 import rdkit.Chem.Pharm3D.EmbedLib
 import rdkit.DistanceGeometry
 
-import ase 
+import ase
 
 import rmgpy
 import rmgpy.molecule
-import rmgpy.species 
-import rmgpy.reaction 
-import rmgpy.data.rmg 
-import rmgpy.exceptions 
+import rmgpy.species
+import rmgpy.reaction
+import rmgpy.data.rmg
+import rmgpy.exceptions
 
 import autotst
 from .data.base import DistanceData, TransitionStateDepository, TSGroups, TransitionStates
@@ -59,6 +61,7 @@ try:
     import py3Dmol
 except ImportError:
     logging.info("Error importing py3Dmol")
+
 
 class Reaction():
 
@@ -110,7 +113,7 @@ class Reaction():
             for direction, complex in self.get_rmg_complexes().items():
                 ts = TS(
                     reaction_label=self.label,
-                    #smiles=complex.to_smiles()
+                    # smiles=complex.to_smiles()
                     direction=direction,
                     rmg_molecule=complex,
                     reaction_family=self.reaction_family,
@@ -149,7 +152,7 @@ class Reaction():
 
         Variables:
         - force_reload (bool):if set to True then forces a reload, even if already loaded.
-        - rmg_database_path (str): path to rmg database directory. If None, database will be 
+        - rmg_database_path (str): path to rmg database directory. If None, database will be
           loaded from rmgpy.settings['database.directory']
 
         Returns:
@@ -161,7 +164,7 @@ class Reaction():
         rmg_database = rmgpy.data.rmg.RMGDatabase()
 
         if rmg_database_path is None:
-	        database_path = rmgpy.settings['database.directory']
+            database_path = rmgpy.settings['database.directory']
         else:
             database_path = rmg_database_path
 
@@ -256,8 +259,9 @@ class Reaction():
             self.rmg_reaction)
         try:
             if ((np.isclose(self._distance_data.distances["d12"] + self._distance_data.distances["d23"],
-                      self._distance_data.distances["d13"],
-                      atol=0.05)) or (self._distance_data.distances["d12"] + self._distance_data.distances["d23"] < self._distance_data.distances["d13"])):
+                self._distance_data.distances["d13"],
+                atol=0.05)) or
+                    (self._distance_data.distances["d12"] + self._distance_data.distances["d23"] < self._distance_data.distances["d13"])):
                 logging.info(
                     "Distance between *1 and *3 is too small, setting it to lower bound of uncertainty")
 
@@ -271,7 +275,7 @@ class Reaction():
 
     def generate_reactants_and_products(self):
         """
-        A module that will generate AutoTST Species for a given reaction's 
+        A module that will generate AutoTST Species for a given reaction's
         reactants and products
 
         Variabels:
@@ -355,7 +359,7 @@ class Reaction():
                     try:  # Trying to label the reaction
                         labeled_r, labeled_p = family.get_labeled_reactants_and_products(
                             test_reaction.reactants, test_reaction.products)
-                    except:  # Failed to match a reaction to the family
+                    except ValueError:  # Failed to match a reaction to the family
                         logging.error(f"Couldn't match {test_reaction} to {name}, trying different combination...")
                         continue
 
@@ -374,7 +378,7 @@ class Reaction():
                             continue
 
                         logging.info(f"Matched reaction to {name} family")
-                        
+
                         # Copying labed reactions and saving them for later
                         labeled_reactants = deepcopy(labeled_r)
                         labeled_products = deepcopy(labeled_p)
@@ -386,9 +390,8 @@ class Reaction():
                         match = True
                         final_family = family
                         final_name = name
-                        
 
-        elif self.rmg_reaction: #RMGReaction but no label
+        elif self.rmg_reaction:  # RMGReaction but no label
             rmg_reactants = []
             rmg_products = []
             for react in self.rmg_reaction.reactants:
@@ -413,53 +416,53 @@ class Reaction():
                 for rmg_reactants, rmg_products in combos_to_try:
                     # Making a test reaction
                     test_reaction = rmgpy.reaction.Reaction(
-                        reactants=list(rmg_reactants), 
+                        reactants=list(rmg_reactants),
                         products=list(rmg_products))
-                    
-                    try: # Trying to label the reaction
+
+                    try:  # Trying to label the reaction
                         labeled_r, labeled_p = family.get_labeled_reactants_and_products(
                             test_reaction.reactants, test_reaction.products)
                         if not (labeled_r and labeled_p):
                             logging.error("Unable to determine a reaction for the forward direction. Trying the reverse direction.")
                             raise rmgpy.exceptions.ActionError
-                    except:
-                        try: 
+                    except ValueError:
+                        try:
                             # Trying the reverse reaction if the forward reaction doesn't work
                             # This is useful for R_Addition reactions
                             labeled_r, labeled_p = family.get_labeled_reactants_and_products(
                                 test_reaction.products, test_reaction.reactants)
-                        except:
+                        except ValueError:
                             logging.error(f"Couldn't match {test_reaction} to {name}, trying different combination...")
                             continue
-                        
+
                     if not (labeled_r and labeled_p):
                         # Catching an error where it matched the reaction but the reactants and products we not return...
                         # A weird bug in RMG that I can explain
                         continue
 
-                    if ((len(labeled_r) > 0) and (len(labeled_p) > 0)): # We found a match.
-                        if match: 
-                            # We found a match already, but we were able to label the reaction again... 
-                            # This would happen if different combinations of resonance structures match up 
+                    if ((len(labeled_r) > 0) and (len(labeled_p) > 0)):  # We found a match.
+                        if match:
+                            # We found a match already, but we were able to label the reaction again...
+                            # This would happen if different combinations of resonance structures match up
                             logging.warning("This reaction has been already labeled... \
                                 it seems that resonance structures \for reactants and products exist.")
                             logging.warning("Skipping this duplicate for now")
                             continue
 
                         logging.info(f"Matched reaction to {name} family")
-                        
+
                         # Copying labed reactions and saving them for later
                         labeled_reactants = deepcopy(labeled_r)
                         labeled_products = deepcopy(labeled_p)
                         match_reaction = rmgpy.reaction.Reaction(
-                            reactants=deepcopy(labeled_r), 
+                            reactants=deepcopy(labeled_r),
                             products=deepcopy(labeled_p))
                         # Setting it true that we matche the reaction and remembering the
-                        # RMG reaction family and family name 
+                        # RMG reaction family and family name
                         match = True
                         final_family = family
                         final_name = name
-                            
+
         assert match, "Could not idetify labeled reactants and products"
 
         reaction_list = final_family.generate_reactions(
@@ -488,7 +491,7 @@ class Reaction():
         """
         if self.label:
             return self.label
-        
+
         string = ""
         for react in self.rmg_reaction.reactants:
             if isinstance(react, rmgpy.species.Species):
@@ -509,7 +512,7 @@ class Reaction():
 
         if self.rmg_reaction:
             return self.rmg_reaction
-        
+
         r, p = self.label.split("_")
 
         reactants = []
@@ -571,17 +574,17 @@ class Reaction():
         A method to generate an ensemble of low energy conformers.
         Currently only supports a systematic search with the goal of adding evolutionary searches
 
-        Variables: 
+        Variables:
         - method (str): the method of the conformer search. Currently only systematic is supported
         - calculator (ASECalculator): the calculator you want to evaluate your conformers with.
 
         Returns:
-        - ts (dict): a dictionary containing an ensemble of low energy transition state geometries in 
+        - ts (dict): a dictionary containing an ensemble of low energy transition state geometries in
             the forward and reverse direction
         """
 
         assert ase_calculator, "Please provide an ASE calculator object"
-        
+
         from .conformer.systematic import systematic_search
 
         for direction, conformers in self.ts.items():
@@ -590,7 +593,7 @@ class Reaction():
             try:
                 abc = conformer.ase_molecule
                 logging.warning(f"abc={abc}")
-            except:
+            except ValueError:
                 logging.warning("that didn't work")
             # conformer.ase_molecule.set_calculator(ase_calculator)
             conformer.ase_molecule.calc = ase_calculator
@@ -600,23 +603,23 @@ class Reaction():
             self.ts[direction] = conformers
 
         return self.ts
-    
+
     def generate_conformers_all(self, ase_calculator=None):
         """
         A method to generate an ensemble of low energy conformers.
         Currently only supports a systematic search with the goal of adding evolutionary searches
 
-        Variables: 
+        Variables:
         - method (str): the method of the conformer search. Currently only systematic is supported
         - calculator (ASECalculator): the calculator you want to evaluate your conformers with.
 
         Returns:
-        - ts (dict): a dictionary containing an ensemble of low energy transition state geometries in 
+        - ts (dict): a dictionary containing an ensemble of low energy transition state geometries in
             the forward and reverse direction
         """
 
         assert ase_calculator, "Please provide an ASE calculator object"
-        
+
         from .conformer.systematic import find_all_combos
 
         for direction, conformers in self.ts.items():
@@ -732,7 +735,7 @@ class TS(Conformer):
     def get_pseudo_geometry(self):
         """
         A method to create a _pseduo_geometry. Essentailly an RDKit molecule with a fake bond drawn
-        between reacting atoms which are not bound to be used in other processes 
+        between reacting atoms which are not bound to be used in other processes
         """
         if self.labels is None:
             self.get_labels()
@@ -751,9 +754,8 @@ class TS(Conformer):
             self._pseudo_geometry = rd_copy
         else:
             logging.warning('There are not 3 labels, setting the _pseudo_geometry to the unedited rdkit molecule')
-            self._pseudo_geometry =  self.rdkit_molecule
+            self._pseudo_geometry = self.rdkit_molecule
         return self._pseudo_geometry
-        
 
     def get_rdkit_mol(self):
         """
@@ -863,7 +865,8 @@ class TS(Conformer):
         if self.reaction_family.lower() in [
             'h_abstraction',
             'r_addition_multiplebond',
-            'intra_h_migration']:
+            'intra_h_migration'
+        ]:
             # for i, atom in enumerate(reactants.atoms):
             lbl1 = self.rmg_molecule.get_all_labeled_atoms()["*1"].sorting_label
             lbl2 = self.rmg_molecule.get_all_labeled_atoms()["*2"].sorting_label
@@ -878,7 +881,7 @@ class TS(Conformer):
             labels = [lbl1, lbl2, lbl3]
             atom_match = ((lbl1,), (lbl2,), (lbl3,))
 
-        #logging.info(f"The labled atoms are {labels}.")
+        # logging.info(f"The labled atoms are {labels}.")
         self.labels = labels
         self.atom_match = atom_match
         return self.labels, self.atom_match
@@ -993,7 +996,7 @@ class TS(Conformer):
         test_conf.rmg_molecule = self.rmg_molecule
         try:
             test_conf._rdkit_molecule = self._pseudo_geometry
-        except:
+        except ValueError:
             self.get_rdkit_mol()
             test_conf._rdkit_molecule = self._pseudo_geometry
         test_conf._ase_molecule = self.ase_molecule
@@ -1015,7 +1018,7 @@ class TS(Conformer):
 
             if self.rmg_molecule.atoms[i].label != '' and self.rmg_molecule.atoms[j].label != '':
                 for a in self.action:
-                    if not 'BOND' in a[0]:
+                    if 'BOND' not in a[0]:
                         # Not a bond action
                         continue
                     elif self.rmg_molecule.atoms[i].label in a and self.rmg_molecule.atoms[j].label in a:
@@ -1039,8 +1042,8 @@ class TS(Conformer):
         test_conf = Conformer()
         test_conf.rmg_molecule = self.rmg_molecule
         try:
-	        test_conf._rdkit_molecule = self._pseudo_geometry
-        except:
+            test_conf._rdkit_molecule = self._pseudo_geometry
+        except ValueError:
             self.get_rdkit_mol()
             test_conf._rdkit_molecule = self._pseudo_geometry
         test_conf._ase_molecule = self.ase_molecule
@@ -1050,8 +1053,8 @@ class TS(Conformer):
         test_conf = Conformer()
         test_conf.rmg_molecule = self.rmg_molecule
         try:
-	        test_conf._rdkit_molecule = self._pseudo_geometry
-        except:
+            test_conf._rdkit_molecule = self._pseudo_geometry
+        except ValueError:
             self.get_rdkit_mol()
             test_conf._rdkit_molecule = self._pseudo_geometry
         test_conf._ase_molecule = self.ase_molecule

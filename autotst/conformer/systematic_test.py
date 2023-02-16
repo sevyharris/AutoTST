@@ -28,11 +28,15 @@
 #
 ##########################################################################
 
-import unittest, os, sys, shutil
+import unittest
+import os
+import sys
+import shutil
 from autotst.species import Conformer
 from autotst.conformer.utilities import get_energy, find_terminal_torsions
 from autotst.conformer.systematic import find_all_combos, systematic_search, opt_conf
 import ase.calculators.emt
+
 
 class TestSystematic(unittest.TestCase):
 
@@ -49,7 +53,7 @@ class TestSystematic(unittest.TestCase):
 
     def test_opt_conf(self):
         self.conformer.ase_molecule.set_calculator(ase.calculators.emt.EMT())
-        
+
         opt_conf(self.conformer)
 
     def test_systematic_search(self):
@@ -61,16 +65,20 @@ class TestSystematic(unittest.TestCase):
     def test_systematic_search_multiplicity(self):
         self.conformer_3rad.ase_molecule.set_calculator(ase.calculators.emt.EMT())
         self.conformer_4rad.ase_molecule.set_calculator(ase.calculators.emt.EMT())
-        confs_3rad = systematic_search(self.conformer_3rad, delta=180.0, energy_cutoff = "default",
-                                      rmsd_cutoff = "default", multiplicity = True)
-        confs_4rad = systematic_search(self.conformer_4rad, delta=180.0, energy_cutoff = "high",
-                                      rmsd_cutoff = "loose", multiplicity = True)
+        confs_3rad = systematic_search(
+            self.conformer_3rad, delta=180.0, energy_cutoff="default",
+            rmsd_cutoff="default", multiplicity=True
+        )
+        confs_4rad = systematic_search(
+            self.conformer_4rad, delta=180.0, energy_cutoff="high",
+            rmsd_cutoff="loose", multiplicity=True
+        )
         self.assertTrue(confs_3rad[0].rmg_molecule.multiplicity == 2)
         self.assertTrue(confs_3rad[1].rmg_molecule.multiplicity == 4)
         self.assertTrue(confs_4rad[0].rmg_molecule.multiplicity == 1)
         self.assertTrue(confs_4rad[1].rmg_molecule.multiplicity == 3)
         self.assertTrue(confs_4rad[2].rmg_molecule.multiplicity == 5)
-        
+
 
 if __name__ == "__main__":
     unittest.main(testRunner=unittest.TextTestRunner(verbosity=2))

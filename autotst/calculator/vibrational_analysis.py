@@ -33,7 +33,7 @@ import logging
 import pandas as pd
 import numpy as np
 import ase
-import cclib.io 
+import cclib.io
 from ..reaction import Reaction, TS
 from ..species import Species, Conformer
 import rmgpy
@@ -67,10 +67,10 @@ class VibrationalAnalysis():
         self.directory = directory
 
         self.log_file = log_file
-        
+
         if self.log_file is None:
             self.get_log_file()
-        
+
         try:
             self.parser = cclib.io.ccread(self.log_file, loglevel=logging.ERROR)
         except:
@@ -121,7 +121,7 @@ class VibrationalAnalysis():
                 self.log_file, loglevel=logging.ERROR)
 
         self.vibrations = list(zip(self.parser.vibfreqs, self.parser.vibdisps))
-        
+
         return self.vibrations
 
     def obtain_geometries(self):
@@ -140,7 +140,6 @@ class VibrationalAnalysis():
 
         assert isinstance(self.ts, TS)
 
-        
         symbol_dict = {
             35: "Br",
             17: "Cl",
@@ -154,7 +153,7 @@ class VibrationalAnalysis():
 
         for atom_num, coords in zip(self.parser.atomnos, self.parser.atomcoords[-1]):
             atoms.append(ase.Atom(symbol=symbol_dict[atom_num], position=coords))
-        
+
         self.ts._ase_molecule = ase.Atoms(atoms)
         self.ts.update_coords_from("ase")
 
@@ -189,7 +188,7 @@ class VibrationalAnalysis():
         """
 
         results = []
-        
+
         for bond in self.ts.bonds:
             i, j = bond.atom_indices
             before = self.pre_geometry.get_distance(i, j)
@@ -245,7 +244,7 @@ class VibrationalAnalysis():
             if (self.percent_changes[self.percent_changes.center].percent_change == 0.0).any():
                 logging.error('Distance between reacting atoms is too big, we cannot validate this TS through vibrational analysis.')
                 return False
-            
+
             center_mean = self.percent_changes[self.percent_changes.center].percent_change.mean()
             shell_mean = self.percent_changes[self.percent_changes.center == False].percent_change.mean()
             if center_mean < 25:
@@ -291,9 +290,8 @@ class VibrationalAnalysis():
             spcs_complex.update_lone_pairs()
             spcs_complex.update_multiplicity()
             complexes.append(spcs_complex.copy(deep=True))
-        
-        return complexes
 
+        return complexes
 
     def validate_by_connecting_the_dots(self):
         """
@@ -336,22 +334,22 @@ class VibrationalAnalysis():
             try:
                 complex1.from_xyz(
                     self.parser.atomnos,
-                    self.parser.atomcoords[-1] + coeff*self.parser.vibdisps[0],
+                    self.parser.atomcoords[-1] + coeff * self.parser.vibdisps[0],
                     raise_atomtype_exception=False,
                 )
                 complex2.from_xyz(
                     self.parser.atomnos,
-                    self.parser.atomcoords[-1] - coeff*self.parser.vibdisps[0],
+                    self.parser.atomcoords[-1] - coeff * self.parser.vibdisps[0],
                     raise_atomtype_exception=False
                 )
             except:
                 complex1.from_xyz(
                     self.parser.atomnos,
-                    self.parser.atomcoords[-1] + coeff*self.parser.vibdisps[0],
+                    self.parser.atomcoords[-1] + coeff * self.parser.vibdisps[0],
                 )
                 complex2.from_xyz(
                     self.parser.atomnos,
-                    self.parser.atomcoords[-1] - coeff*self.parser.vibdisps[0],
+                    self.parser.atomcoords[-1] - coeff * self.parser.vibdisps[0],
                 )
 
             for c in (complex1, complex2):
@@ -385,7 +383,6 @@ class VibrationalAnalysis():
         methods.
 
         retuns: tup (self.validate_ts(),self.validate_by_connecting_the_dots())
-        """ 
+        """
 
-        return (self.validate_ts(),self.validate_by_connecting_the_dots())
-        
+        return (self.validate_ts(), self.validate_by_connecting_the_dots())

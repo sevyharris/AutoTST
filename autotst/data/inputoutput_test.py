@@ -40,12 +40,13 @@ from .base import QMData, DistanceData
 from .inputoutput import InputOutput
 import rmgpy.kinetics
 
+
 class TestInputOutput(unittest.TestCase):
 
     def setUp(self):
         self.reaction = Reaction("CC+[O]O_[CH2]C+OO")
         self.io = InputOutput(
-            reaction=self.reaction, 
+            reaction=self.reaction,
             directory=os.path.expandvars("$AUTOTST/test/")
         )
         try:
@@ -58,7 +59,7 @@ class TestInputOutput(unittest.TestCase):
             try:
                 shutil.copy(
                     os.path.join(
-                        os.path.expandvars("$AUTOTST/test/bin/log-files"), 
+                        os.path.expandvars("$AUTOTST/test/bin/log-files"),
                         self.reaction.label + "_forward_0.log"
                         ),
                     os.path.join(
@@ -68,9 +69,8 @@ class TestInputOutput(unittest.TestCase):
                         self.reaction.label + ".log"
                     )
                 )
-            except:
+            except OSError:
                 pass
-            
 
     def test_ts_file_path(self):
         path = self.io.get_ts_file_path()
@@ -95,7 +95,7 @@ class TestInputOutput(unittest.TestCase):
                 self.reaction.label + ".kinetics"
             )
         )
-    
+
     def test_get_qmdata(self):
 
         self.qmdata = self.io.get_qmdata()

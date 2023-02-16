@@ -28,10 +28,14 @@
 #
 ##########################################################################
 
-import unittest, os, sys, shutil
+import unittest
+import os
+import sys
+import shutil
 from ..species import Conformer
 from .utilities import get_energy, find_terminal_torsions
 import ase.calculators.emt
+
 
 class TestUtilities(unittest.TestCase):
 
@@ -50,9 +54,9 @@ class TestUtilities(unittest.TestCase):
 
         terminal_torsions, non_terminal_torsions = find_terminal_torsions(self.conformer)
         self.assertEqual(len(self.conformer.torsions), len(terminal_torsions + non_terminal_torsions))
-        self.assertEqual(len(terminal_torsions), 1) # only one terminal methyl group
-        self.assertEqual(len(non_terminal_torsions), 3) # N-C, O-C, C-C
+        self.assertEqual(len(terminal_torsions), 1)  # only one terminal methyl group
+        self.assertEqual(len(non_terminal_torsions), 3)  # N-C, O-C, C-C
 
-    
+
 if __name__ == "__main__":
     unittest.main(testRunner=unittest.TextTestRunner(verbosity=2))

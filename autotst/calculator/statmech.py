@@ -154,13 +154,13 @@ class StatMech():
 
         if include_rotors:
             output += ["rotors = ["]
-            if len(conformer.torsions) ==0:
+            if len(conformer.torsions) == 0:
                 conformer.get_molecules()
-                conformer.get_geometries() 
+                conformer.get_geometries()
             for torsion in conformer.torsions:
                 output += [self.get_rotor_info(conformer, torsion)]
             output += ["]"]  # TODO fix this
-        
+
         input_string = ""
 
         for t in output:
@@ -169,7 +169,6 @@ class StatMech():
         with open(os.path.join(self.directory, "species", label, label + '.py'), "w") as f:
             f.write(input_string)
         return True
-
 
     def write_conformer_file2(self, conformer, outdir, gauss_log, include_rotors=True):
         """
@@ -196,7 +195,6 @@ class StatMech():
             1:  "H",
         }
 
-
         atoms = []
 
         for atom_num, coords in zip(parser.atomnos, parser.atomcoords[-1]):
@@ -221,13 +219,13 @@ class StatMech():
 
         if include_rotors:
             output += ["rotors = ["]
-            if len(conformer.torsions) ==0:
+            if len(conformer.torsions) == 0:
                 conformer.get_molecules()
-                conformer.get_geometries() 
+                conformer.get_geometries()
             for torsion in conformer.torsions:
                 output += [self.get_rotor_info(conformer, torsion)]
             output += ["]"]
-        
+
         input_string = ""
 
         for t in output:
@@ -236,7 +234,6 @@ class StatMech():
         with open(os.path.join(outdir, species_name + '.py'), "w") as f:
             f.write(input_string)
         return True
-
 
     def get_rotor_info(self, conformer, torsion):
         """
@@ -249,17 +246,17 @@ class StatMech():
 
         Parameters:
         - conformer (Conformer): autotst conformer object
-        - torsion (Torsion): autotst torsion object 
+        - torsion (Torsion): autotst torsion object
 
 
         Returns:
         - info (str): a string containing all of the relevant information for a hindered rotor scan
         """
-        #torsion = conformer.torsions[torsion_index]
+        # torsion = conformer.torsions[torsion_index]
         _, j, k, _ = torsion.atom_indices
 
         # Adjusted since mol's IDs start from 0 while Arkane's start from 1
-        tor_center_adj = [j+1, k+1]
+        tor_center_adj = [j + 1, k + 1]
 
         if isinstance(conformer, TS):
             tor_log = os.path.join(
@@ -267,9 +264,9 @@ class StatMech():
                 "ts",
                 conformer.reaction_label,
                 "rotors",
-                comformer.reaction_label + f"_36by10_{j}_{k}.log"
+                conformer.reaction_label + f"_36by10_{j}_{k}.log"
             )
-            label = comformer.reaction_label + f"_36by10_{j}_{k}"
+            label = conformer.reaction_label + f"_36by10_{j}_{k}"
         elif isinstance(conformer, Conformer):
             tor_log = os.path.join(
                 self.directory,
@@ -298,7 +295,7 @@ class StatMech():
                 top_IDs.append(num)
 
         # Adjusted to start from 1 instead of 0
-        top_IDs_adj = [ID+1 for ID in top_IDs]
+        top_IDs_adj = [ID + 1 for ID in top_IDs]
 
         info = f"     HinderedRotor(scanLog=Log('{tor_log}'), pivots={tor_center_adj}, top={top_IDs_adj}, fit='fourier'),"
 
@@ -325,7 +322,7 @@ class StatMech():
                 PATH,
                 PATH.replace('py', 'old.py')
             )
-            
+
         if not os.path.exists(os.path.join(self.directory, "ts", label, label + ".log")):
             logging.info("There is no lowest energy conformer file...")
             return False
@@ -599,8 +596,8 @@ class StatMech():
                     self.kinetics_job = job
                 elif isinstance(job, arkane.main.ThermoJob):
                     self.thermo_job = job
-        except: #TODO double check this and make this mroe robust / better at catching errors
-            logging.warming('')
+        except OSError:  # TODO double check this and make this mroe robust / better at catching errors
+            logging.warning('')
             self.write_kinetics_input(include_rotors=False)
 
         self.kinetics_job.input_file = os.path.join(

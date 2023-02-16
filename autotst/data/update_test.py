@@ -28,7 +28,7 @@
 #
 ##########################################################################
 
-import unittest, os, sys, shutil
+import unittest
 from ..reaction import Reaction
 from .update import get_unknown_species
 
@@ -51,6 +51,6 @@ class TestUpdateMethods(unittest.TestCase):
         unknowns = get_unknown_species([self.reaction], [])
         self.assertEqual(len(unknowns), 4)
 
-        
+
 if __name__ == "__main__":
     unittest.main(testRunner=unittest.TextTestRunner(verbosity=2))

@@ -29,7 +29,9 @@
 ##########################################################################
 
 import unittest
-import os, shutil, logging
+import os
+import shutil
+import logging
 import pandas as pd
 import numpy as np
 import ase
@@ -39,6 +41,7 @@ import rmgpy.molecule
 from ..reaction import Reaction, TS
 from ..species import Species, Conformer
 from .vibrational_analysis import percent_change, VibrationalAnalysis
+
 
 class VibrationalAnalysisTest(unittest.TestCase):
 
@@ -59,8 +62,8 @@ class VibrationalAnalysisTest(unittest.TestCase):
 
         self.directory = directory
         self.vibrational_analysis = VibrationalAnalysis(
-            transitionstate = self.ts,
-            directory = self.directory
+            transitionstate=self.ts,
+            directory=self.directory
         )
 
         self.reaction2 = Reaction("[CH3]+CC(F)(F)F_C+[CH2]C(F)(F)F")
@@ -69,8 +72,8 @@ class VibrationalAnalysisTest(unittest.TestCase):
         log_file = os.path.join(
             directory, "bin", "log-files", "[CH3]+CC(F)(F)F_C+[CH2]C(F)(F)F.log")
         self.vibrational_analysis2 = VibrationalAnalysis(
-            transitionstate = self.ts2,
-            log_file = log_file
+            transitionstate=self.ts2,
+            log_file=log_file
         )
 
     def test_get_log_file(self):
@@ -130,12 +133,13 @@ class VibrationalAnalysisTest(unittest.TestCase):
 
     def test_validate_ts(self):
         self.assertTrue(self.vibrational_analysis.validate_ts())
-    
+
     def test_validate_by_connecting_the_dots(self):
         self.assertTrue(self.vibrational_analysis2.validate_by_connecting_the_dots())
 
     def test_validate(self):
         self.assertTrue(self.vibrational_analysis2.validate())
+
 
 if __name__ == "__main__":
     unittest.main(testRunner=unittest.TextTestRunner(verbosity=2))
@@ -148,6 +152,5 @@ if __name__ == "__main__":
             for fi in files:
                 if fi.endswith(".symm"):
                     os.remove(os.path.join(head, fi))
-    except:
+    except OSError:
         None
-

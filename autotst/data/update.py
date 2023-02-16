@@ -28,7 +28,9 @@
 #
 ##########################################################################
 
-import itertools, os, re, logging
+import os
+import re
+import logging
 import pylab
 import scipy.stats
 import pandas as pd
@@ -40,6 +42,7 @@ from .base import *
 import rmgpy
 import rmgpy.molecule
 import rmgpy.data.base
+
 
 def update_all(reactions, family, method='', short_desc=''):
     """
@@ -216,9 +219,8 @@ def rote_load_dict(path):
             entry.item = group
             entry.label = label
             entries[label] = entry
-        except ValueError: # This actally isn't an entry. This error happens sometimes
+        except ValueError:  # This actally isn't an entry. This error happens sometimes
             continue
-
 
     return entries
 
@@ -302,7 +304,6 @@ def update_known_reactions(
                 logging.warning(
                     f'{rel_species} not found in species dictionary')
 
-
         labeled_reactants = [found_species[reactant] for reactant in rmg_reaction.reactants]
         labeled_products = [found_species[product] for product in rmg_reaction.products]
         if len(labeled_reactants) == 2:
@@ -315,49 +316,51 @@ def update_known_reactions(
             right_string = f"{labeled_products[0]}"
 
         Label = f'{left_string} <=> {right_string}'
-        #print Label
+        # print Label
 
         # adding new entries to r_db, r_db will contain old and new reactions
-        r_db.load_entry(Index + i,
-                       reactant1=None,
-                       reactant2=None,
-                       reactant3=None,
-                       product1=None,
-                       product2=None,
-                       product3=None,
-                       distances=distance_data,
-                       degeneracy=1,
-                       label=Label,
-                       duplicate=False,
-                       reversible=True,
-                       reference=None,
-                       reference_type='',
-                       short_desc=short_desc,
-                       long_desc='',
-                       rank=None,
-                       )
+        r_db.load_entry(
+            Index + i,
+            reactant1=None,
+            reactant2=None,
+            reactant3=None,
+            product1=None,
+            product2=None,
+            product3=None,
+            distances=distance_data,
+            degeneracy=1,
+            label=Label,
+            duplicate=False,
+            reversible=True,
+            reference=None,
+            reference_type='',
+            short_desc=short_desc,
+            long_desc='',
+            rank=None,
+        )
 
         r_db.entries[f'{(Index + i):d}:{Label}'].item = rmg_reaction
 
         # Adding new reactions to the new_r_db as well
-        new_r_db.load_entry(Index + i,
-                           reactant1=None,
-                           reactant2=None,
-                           reactant3=None,
-                           product1=None,
-                           product2=None,
-                           product3=None,
-                           distances=distance_data,
-                           degeneracy=1,
-                           label=Label,
-                           duplicate=False,
-                           reversible=True,
-                           reference=None,
-                           reference_type='',
-                           short_desc=short_desc,
-                           long_desc='',
-                           rank=None,
-                           )
+        new_r_db.load_entry(
+            Index + i,
+            reactant1=None,
+            reactant2=None,
+            reactant3=None,
+            product1=None,
+            product2=None,
+            product3=None,
+            distances=distance_data,
+            degeneracy=1,
+            label=Label,
+            duplicate=False,
+            reversible=True,
+            reference=None,
+            reference_type='',
+            short_desc=short_desc,
+            long_desc='',
+            rank=None,
+        )
 
         new_r_db.entries[f'{(Index + i):d}:{Label}'].item = rmg_reaction
 
@@ -390,7 +393,7 @@ def update_databases(reactions, method='', short_desc='', reaction_family='', ov
     assert len(reactions) > 0
 
     # Not a good assumption, @nateharms' opinion
-    #if reaction_family == '':
+    # if reaction_family == '':
     #    reaction_family = 'H_Abstraction'
     #    logging.warning(
     #        'Defaulting to reaction family of {}'.format(reaction_family))
@@ -575,7 +578,7 @@ class DatabaseUpdater:
         from .base import DistanceData, TransitionStateDepository, TSGroups, TransitionStates
         ts_database = TransitionStates()
 
-        #path = os.path.join(os.path.expandvars("$RMGpy"), "..", "AutoTST", "database", self.family)
+        # path = os.path.join(os.path.expandvars("$RMGpy"), "..", "AutoTST", "database", self.family)
         path = self.path
 
         global_context = {'__builtins__': None}
@@ -613,7 +616,7 @@ class DatabaseUpdater:
             all_entries.extend(descendants)
 
         for tree_index, entry in enumerate(all_entries):
-            #tree_indices[entry] = tree_index
+            # tree_indices[entry] = tree_index
             self.database.groups.entries[entry.label].index = tree_index
             entry.index = tree_index
 
@@ -645,7 +648,7 @@ class DatabaseUpdater:
                     atoms = list(reactant.get_all_labeled_atoms().values())
                     assert atoms is not None
 
-                    #temp_group = self.database.groups.descend_tree(reactant, atoms, root=top_node)
+                    # temp_group = self.database.groups.descend_tree(reactant, atoms, root=top_node)
                     temp_group = self.database.groups.descend_tree(
                         reactant, atoms, root=top_node)
                     if temp_group is not None:  # Temp_group will only be found using one of the two top_nodes
@@ -740,7 +743,7 @@ class DatabaseUpdater:
                 relavent_combinations.append(
                     self.group_ancestors[reactant_group])
             # will throw if reaction does not have 2 reactants
-            #assert len(relavent_combinations) == 2, We don't need this
+            # assert len(relavent_combinations) == 2, We don't need this
 
             relavent_combinations = get_all_combinations(relavent_combinations)
             # rel_comb is just all combinations of reactant1 and its ancestors
