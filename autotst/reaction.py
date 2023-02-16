@@ -254,14 +254,17 @@ class Reaction():
         assert self.rmg_reaction, "try calling get_rmg_reaction() first"
         self._distance_data = self.ts_databases[self.reaction_family].groups.estimate_distances_using_group_additivity(
             self.rmg_reaction)
-        if ((np.isclose(self._distance_data.distances["d12"] + self._distance_data.distances["d23"],
+        try:
+            if ((np.isclose(self._distance_data.distances["d12"] + self._distance_data.distances["d23"],
                       self._distance_data.distances["d13"],
                       atol=0.05)) or (self._distance_data.distances["d12"] + self._distance_data.distances["d23"] < self._distance_data.distances["d13"])):
-            logging.info(
-                "Distance between *1 and *3 is too small, setting it to lower bound of uncertainty")
+                logging.info(
+                    "Distance between *1 and *3 is too small, setting it to lower bound of uncertainty")
 
-            self._distance_data.distances["d13"] -= self._distance_data.uncertainties["d13"] / 2
-
+                self._distance_data.distances["d13"] -= self._distance_data.uncertainties["d13"] / 2
+        except KeyError:
+            print('debug distances are', self._distance_data.distances)
+            raise
         logging.info(f"The distance data is as follows: {self._distance_data}")
 
         return self._distance_data
@@ -320,10 +323,12 @@ class Reaction():
 
             # Generating lists of lists. Main list is the reactans or products
             # Secondary list is composed of the resonance structures for that species
+            self.label = self.label.replace('[C-]#[O+]', 'CARBONMONOXIDE')
             r, p = self.label.split("_")
 
             smiles_conversions = {
                 "[CH]": "[CH...]",
+                "CARBONMONOXIDE": "[C-]#[O+]",
             }
 
             def get_rmg_mol(smile):
@@ -561,7 +566,7 @@ class Reaction():
 
         return self.complexes
 
-    def generate_conformers(self, ase_calculator=None):
+    def generate_conformers(self, ase_calculator=None, max_combos=300, max_conformers=12):
         """
         A method to generate an ensemble of low energy conformers.
         Currently only supports a systematic search with the goal of adding evolutionary searches
@@ -589,7 +594,7 @@ class Reaction():
                 logging.warning("that didn't work")
             # conformer.ase_molecule.set_calculator(ase_calculator)
             conformer.ase_molecule.calc = ase_calculator
-            conformers = systematic_search(conformer, delta=120, max_combos=100, max_conformers=10)
+            conformers = systematic_search(conformer, delta=120, max_combos=max_combos, max_conformers=max_conformers)
             for conformer in conformers:
                 conformer.direction = direction
             self.ts[direction] = conformers

@@ -275,7 +275,7 @@ class Gaussian():
         #     pass
         
         #if self.conformer.reaction_family != "Some reaction family with 4 labeled atoms..."
-        if self.conformer.reaction_family.lower() in ["h_abstraction", "intra_h_migration", "r_addition_multiplebond"]:
+        if self.conformer.reaction_family.lower() in ["h_abstraction", "intra_h_migration", "r_addition_multiplebond", "disproportionation"]:
             ind1 = self.conformer.rmg_molecule.get_labeled_atoms("*1")[0].sorting_label
             ind2 = self.conformer.rmg_molecule.get_labeled_atoms("*2")[0].sorting_label
             ind3 = self.conformer.rmg_molecule.get_labeled_atoms("*3")[0].sorting_label
