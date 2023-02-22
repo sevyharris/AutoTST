@@ -144,6 +144,11 @@ def opt_conf(i):
         reference_mol = conformer.rmg_molecule.copy(deep=True)
         reference_mol = reference_mol.to_single_bonds()
     calculator = conformer.ase_molecule.get_calculator()
+
+    if calculator == 'SKIP':
+        logging.info("Skipping calculation per ase calculator instruction")
+        return 0
+
     calculator.__init__()
     calculator = deepcopy(calculator)
     labels = []
@@ -352,6 +357,8 @@ def systematic_search(conformer,
         copy_conf.ase_molecule.set_calculator(calc)
 
         conformers[index] = copy_conf
+
+
 
     logging.info(f"Conformers to investigate: {len(conformers)}")
     num_threads = multiprocessing.cpu_count() - 1 or 1
