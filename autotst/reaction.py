@@ -359,7 +359,7 @@ class Reaction():
                     try:  # Trying to label the reaction
                         labeled_r, labeled_p = family.get_labeled_reactants_and_products(
                             test_reaction.reactants, test_reaction.products)
-                    except ValueError:  # Failed to match a reaction to the family
+                    except (IndexError, rmgpy.exceptions.ActionError):  # Failed to match a reaction to the family
                         logging.error(f"Couldn't match {test_reaction} to {name}, trying different combination...")
                         continue
 
