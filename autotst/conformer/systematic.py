@@ -223,7 +223,7 @@ def opt_conf(i):
     conformer.update_coords_from("ase")
     try:
         energy = conformer.ase_molecule.get_potential_energy()
-    except RuntimeError:
+    except (RuntimeError, AssertionError):
         if not converged:
             logging.error("Unable to parse energy from unconverged geometry")
         else:
