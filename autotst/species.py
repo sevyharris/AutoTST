@@ -184,17 +184,41 @@ class Species():
 
         return conformers
 
-    def generate_conformers(self, ase_calculator):
-
+    def generate_conformers(self, ase_calculator, max_combos=100, max_conformers=10, save_results=False, results_dir=''):
         from .conformer.systematic import systematic_search, find_all_combos
 
+        # This for loop goes through all the resonance structures, so we should calculate them all
+        save_offset = 0
         for smiles, conformers in self.conformers.items():
-            conformer = conformers[0]
+            conformer = conformers[0]  # for some reason, this is a list, but it contains one conformer
+            conformer.save_results = save_results
+            conformer.results_dir = results_dir
+            conformer.save_offset = save_offset
             conformer.ase_molecule.set_calculator(ase_calculator)
-            conformers = systematic_search(conformer, max_combos=100, max_conformers=10)
+            conformers = systematic_search(
+                conformer,
+                max_combos=max_combos,
+                max_conformers=max_conformers,
+            )
             self.conformers[smiles] = conformers
+            # save_index is an offset to use in the numbering to account for resonance structures
+            save_offset += conformer.save_offset
 
         return self.conformers
+
+    def count_conformers(self):
+        count = 0
+        for _, conformers in self.conformers.items():
+            conformer = conformers[0]
+            conformer.ase_molecule.set_calculator('SKIP')
+            num_conformers = autotst.conformer.systematic.systematic_search(
+                conformer,
+                max_combos=100,
+                max_conformers=10,
+                count_combos=True,
+            )
+            count += num_conformers
+        return count
 
 
 class Conformer():
@@ -215,6 +239,9 @@ class Conformer():
         self.cistrans = []
         self.chiral_centers = []
         self._symmetry_number = None
+        self.save_results = False  # whether or not to save the results
+        self.results_dir = ''  # the directory to save the results to
+        self.save_offset = 0  # an offset to use in the numbering to account for resonance structures
 
         if (smiles or rmg_molecule):
             if smiles and rmg_molecule:
@@ -250,6 +277,9 @@ class Conformer():
         copy_conf._ase_molecule = self.ase_molecule.copy()
         copy_conf.get_geometries()
         copy_conf.energy = self.energy
+        copy_conf.save_results = self.save_results
+        copy_conf.results_dir = self.results_dir
+        copy_conf.save_offset = self.save_offset
         return copy_conf
 
     @property

@@ -38,6 +38,7 @@ import multiprocessing
 from copy import deepcopy
 
 import ase
+import ase.io
 import ase.units
 import ase.calculators.calculator
 import ase.optimize
@@ -127,6 +128,45 @@ def find_all_combos(
     return all_combos
 
 
+def calculate_garbage_score(atoms, verbose=False):
+    # copied from https://github.com/sevyharris/reaction_calculator/blob/main/garbage.py
+    garbage_score = 0
+    min_H_dist = 0.75
+    min_heavy_dist = 1.1
+    nn_dist = 1.5
+    nn_threshold = 4
+
+    # do a nearest neighbor check to make sure no atom is too close to another
+    num_combos = len(atoms) * (len(atoms) - 1) / 2
+    for i in range(0, len(atoms)):
+        # count the atoms within 1.5A of this atom
+        n_close = 0
+
+        for j in range(i + 1, len(atoms)):
+            dist = atoms.get_distance(i, j)
+            if atoms[i].symbol == 'H' or atoms[j].symbol == 'H':
+                threshold = min_H_dist
+            else:
+                threshold = min_heavy_dist
+            if dist < threshold:
+                atomic_weight = atoms.get_atomic_numbers()[i] + atoms.get_atomic_numbers()[j]
+                garbage_score += atomic_weight / num_combos + threshold - dist
+                if verbose:
+                    print(f'Atom {i} and atom {j} are too close ({dist:.3f} < {threshold:.3f})')
+            if dist < nn_dist:
+                n_close += 1
+        for j in range(0, i):
+            dist = atoms.get_distance(i, j)
+            if dist < nn_dist:
+                n_close += 1
+
+        if n_close > nn_threshold:
+            garbage_score += n_close / 10.0
+            if verbose:
+                print(f'Atom {i} has {n_close} neighbors')
+    return garbage_score
+
+
 def opt_conf(i):
     """
     A helper function to optimize the geometry of a conformer.
@@ -140,6 +180,22 @@ def opt_conf(i):
         # than specify a global dict
         conformer = i
 
+    if conformer.save_results:
+        # check for previous results
+        result_num = i + conformer.save_offset
+        result_file = os.path.join(conformer.results_dir, f"results_{result_num:05}.xyz")
+
+        if os.path.exists(result_file):
+            with open(result_file, "r") as f:
+                atoms = ase.io.read(f, format='extxyz')
+            try:
+                energy = atoms.calc.results['energy']
+                logging.info(f"Skipping calculation due to previous results in {result_file}")
+                return energy
+            except (AttributeError, KeyError):
+                # no calculator or no energy stored
+                pass
+
     if not isinstance(conformer, TS):
         reference_mol = conformer.rmg_molecule.copy(deep=True)
         reference_mol = reference_mol.to_single_bonds()
@@ -147,7 +203,13 @@ def opt_conf(i):
 
     if calculator == 'SKIP':
         logging.info("Skipping calculation per ase calculator instruction")
-        return 0
+        return 1e5
+
+    # do sanity check on geometry to check for garbage
+    garbage_score = calculate_garbage_score(conformer.ase_molecule)
+    if garbage_score > 1.0:
+        logging.info(f"Skipping calculation due to garbage score of {garbage_score}")
+        return 1e5
 
     calculator.__init__()
     calculator = deepcopy(calculator)
@@ -180,7 +242,8 @@ def opt_conf(i):
 
         calculator.atoms = conformer.ase_molecule
     conformer.ase_molecule.set_calculator(calculator)
-    opt = ase.optimize.BFGS(conformer.ase_molecule, logfile=None)
+    # opt = ase.optimize.BFGS(conformer.ase_molecule, logfile=None)
+    opt = ase.optimize.LBFGS(conformer.ase_molecule, logfile=None)
     if type == 'species':
         if isinstance(conformer.index, int):
             c = ase.constraints.FixBondLengths(labels)
@@ -233,19 +296,25 @@ def opt_conf(i):
         conformers[i] = conformer  # update the conformer from old object
     except TypeError:
         logging.error('Could not add updated conformer to conformers dict')
+
+    if conformer.save_results:
+        ase.io.write(result_file, conformer.ase_molecule, format='extxyz')
+
     return energy  # return energy
 
 
-def systematic_search(conformer,
-                      delta=float(120),
-                      energy_cutoff=10.0,  # kcal/mol
-                      rmsd_cutoff=0.5,  # angstroms
-                      cistrans=True,
-                      chiral_centers=True,
-                      multiplicity=False,
-                      max_combos=-1,  # default is no maximum
-                      max_conformers=-1,  # default is no maximum
-                      ):
+def systematic_search(
+    conformer,
+    delta=float(120),
+    energy_cutoff=10.0,  # kcal/mol
+    rmsd_cutoff=0.5,  # angstroms
+    cistrans=True,
+    chiral_centers=True,
+    multiplicity=False,
+    max_combos=-1,  # default is no maximum
+    max_conformers=-1,  # default is no maximum
+    count_combos=False,  # return the number of combinations
+):
     """
     Perfoms a systematic conformer analysis of a `Conformer` or a `TS` object
 
@@ -301,6 +370,8 @@ def systematic_search(conformer,
         cistrans=cistrans,
         chiral_centers=chiral_centers)
 
+    if count_combos:
+        return len(combos)
     if max_combos > 0 and len(combos) > max_combos:
         combos = combos[0:max_combos]
 
@@ -357,8 +428,6 @@ def systematic_search(conformer,
         copy_conf.ase_molecule.set_calculator(calc)
 
         conformers[index] = copy_conf
-
-
 
     logging.info(f"Conformers to investigate: {len(conformers)}")
     num_threads = multiprocessing.cpu_count() - 1 or 1
@@ -419,4 +488,6 @@ def systematic_search(conformer,
 
     logging.info(f"We have identified {len(confs)} unique, low-energy conformers for {conformer}")
 
+    # note how many conformers were investigated for the save_offset
+    conformer.save_offset = len(conformers)
     return confs
