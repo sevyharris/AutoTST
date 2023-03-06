@@ -39,6 +39,7 @@ from copy import deepcopy
 
 import ase
 import ase.io
+import ase.io.extxyz
 import ase.units
 import ase.calculators.calculator
 import ase.optimize
@@ -187,14 +188,17 @@ def opt_conf(i):
 
         if os.path.exists(result_file):
             with open(result_file, "r") as f:
-                atoms = ase.io.read(f, format='extxyz')
+                atoms_gen = ase.io.extxyz.read_extxyz(f)
+                try:
+                    atoms = next(atoms_gen)
+                except StopIteration:
+                    logging.info(f"No atoms object in {result_file}")
             try:
-                energy = atoms.calc.results['energy']
+                energy = atoms.info['energy']
                 logging.info(f"Skipping calculation due to previous results in {result_file}")
                 return energy
-            except (AttributeError, KeyError):
-                # no calculator or no energy stored
-                pass
+            except KeyError:
+                logging.info(f"No energy results in {result_file}")
 
     if not isinstance(conformer, TS):
         reference_mol = conformer.rmg_molecule.copy(deep=True)
@@ -210,13 +214,11 @@ def opt_conf(i):
     if garbage_score > 1.0:
         logging.info(f"Skipping calculation due to garbage score of {garbage_score}")
         # save result anyways so we can skip later
+        energy = 1e5
         if conformer.save_results:
-            atoms = conformer.ase_molecule.copy()
-            atoms.calc = calculator
-            atoms.calc.results['energy'] = 1e5
             with open(result_file, "w") as f:
-                ase.io.write(f, atoms, format='extxyz')
-        return 1e5
+                ase.io.extxyz.write_xyz(f, conformer.ase_molecule, comment=f"energy={energy}")
+        return energy
 
     calculator.__init__()
     calculator = deepcopy(calculator)
@@ -249,8 +251,8 @@ def opt_conf(i):
 
         calculator.atoms = conformer.ase_molecule
     conformer.ase_molecule.set_calculator(calculator)
-    # opt = ase.optimize.BFGS(conformer.ase_molecule, logfile=None)
-    opt = ase.optimize.LBFGS(conformer.ase_molecule, logfile=None)
+    opt = ase.optimize.BFGS(conformer.ase_molecule, logfile=None)
+    #opt = ase.optimize.LBFGS(conformer.ase_molecule, logfile=None)
     if type == 'species':
         if isinstance(conformer.index, int):
             c = ase.constraints.FixBondLengths(labels)
@@ -305,7 +307,8 @@ def opt_conf(i):
         logging.error('Could not add updated conformer to conformers dict')
 
     if conformer.save_results:
-        ase.io.write(result_file, conformer.ase_molecule, format='extxyz')
+        with open(result_file, "w") as f:
+            ase.io.extxyz.write_xyz(f, conformer.ase_molecule, comment=f"energy={energy}")
 
     return energy  # return energy
 
