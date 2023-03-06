@@ -184,7 +184,7 @@ class Species():
 
         return conformers
 
-    def generate_conformers(self, ase_calculator, max_combos=100, max_conformers=10, save_results=False, results_dir=''):
+    def generate_conformers(self, ase_calculator, max_combos=1000, max_conformers=100, save_results=False, results_dir=''):
         from .conformer.systematic import systematic_search, find_all_combos
 
         # This for loop goes through all the resonance structures, so we should calculate them all

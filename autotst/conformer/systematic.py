@@ -203,12 +203,19 @@ def opt_conf(i):
 
     if calculator == 'SKIP':
         logging.info("Skipping calculation per ase calculator instruction")
-        return 1e5
+        return 1e5  # the one case we don't need to save xyz files
 
     # do sanity check on geometry to check for garbage
     garbage_score = calculate_garbage_score(conformer.ase_molecule)
     if garbage_score > 1.0:
         logging.info(f"Skipping calculation due to garbage score of {garbage_score}")
+        # save result anyways so we can skip later
+        if conformer.save_results:
+            atoms = conformer.ase_molecule.copy()
+            atoms.calc = calculator
+            atoms.calc.results['energy'] = 1e5
+            with open(result_file, "w") as f:
+                ase.io.write(f, atoms, format='extxyz')
         return 1e5
 
     calculator.__init__()
@@ -286,7 +293,7 @@ def opt_conf(i):
     conformer.update_coords_from("ase")
     try:
         energy = conformer.ase_molecule.get_potential_energy()
-    except (RuntimeError, AssertionError):
+    except (RuntimeError, AssertionError, NotImplementedError):
         if not converged:
             logging.error("Unable to parse energy from unconverged geometry")
         else:
