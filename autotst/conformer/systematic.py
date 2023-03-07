@@ -252,7 +252,6 @@ def opt_conf(i):
         calculator.atoms = conformer.ase_molecule
     conformer.ase_molecule.set_calculator(calculator)
     opt = ase.optimize.BFGS(conformer.ase_molecule, logfile=None)
-    #opt = ase.optimize.LBFGS(conformer.ase_molecule, logfile=None)
     if type == 'species':
         if isinstance(conformer.index, int):
             c = ase.constraints.FixBondLengths(labels)

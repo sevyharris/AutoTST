@@ -569,7 +569,7 @@ class Reaction():
 
         return self.complexes
 
-    def generate_conformers(self, ase_calculator=None, max_combos=300, max_conformers=12):
+    def generate_conformers(self, ase_calculator=None, max_combos=1000, max_conformers=100, save_results=False, results_dir=''):
         """
         A method to generate an ensemble of low energy conformers.
         Currently only supports a systematic search with the goal of adding evolutionary searches
@@ -587,9 +587,12 @@ class Reaction():
 
         from .conformer.systematic import systematic_search
 
+        save_offset = 0
         for direction, conformers in self.ts.items():
             conformer = conformers[0]
-
+            conformer.save_results = save_results
+            conformer.results_dir = results_dir
+            conformer.save_offset = save_offset
             try:
                 abc = conformer.ase_molecule
                 logging.warning(f"abc={abc}")
@@ -601,6 +604,7 @@ class Reaction():
             for conformer in conformers:
                 conformer.direction = direction
             self.ts[direction] = conformers
+            save_offset += conformer.save_offset
 
         return self.ts
 
@@ -658,6 +662,9 @@ class TS(Conformer):
         self.bm = None
         self.labels = None
         self.action = action
+        self.save_results = False  # whether or not to save the results
+        self.results_dir = ''  # the directory to save the results to
+        self.save_offset = 0  # an offset to use in the numbering to account for resonance structures
 
         assert direction in ["forward",
                              "reverse"], "Please provide a valid direction"
@@ -708,7 +715,11 @@ class TS(Conformer):
         copy_conf._ase_molecule = self.ase_molecule.copy()
         copy_conf.get_geometries()
         copy_conf.energy = self.energy
+        copy_conf.save_results = self.save_results
+        copy_conf.results_dir = self.results_dir
+        copy_conf.save_offset = self.save_offset
         copy_conf._symmetry_number = self._symmetry_number
+
         return copy_conf
 
     @property
