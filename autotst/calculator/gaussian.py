@@ -275,18 +275,30 @@ class Gaussian():
         #     pass
 
         # if self.conformer.reaction_family != "Some reaction family with 4 labeled atoms..."
-        if self.conformer.reaction_family.lower() in ["h_abstraction", "intra_h_migration", "r_addition_multiplebond", "disproportionation"]:
+        combos = ""
+
+        if self.conformer.reaction_family.lower() in ["h_abstraction", "intra_h_migration", "r_addition_multiplebond"]:
             ind1 = self.conformer.rmg_molecule.get_labeled_atoms("*1")[0].sorting_label
             ind2 = self.conformer.rmg_molecule.get_labeled_atoms("*2")[0].sorting_label
             ind3 = self.conformer.rmg_molecule.get_labeled_atoms("*3")[0].sorting_label
+
+            combos += f"{(ind1 + 1)} {(ind2 + 1)} F\n"
+            combos += f"{(ind2 + 1)} {(ind3 + 1)} F\n"
+            combos += f"{(ind1 + 1)} {(ind2 + 1)} {(ind3 + 1)} F"
+        elif self.conformer.reaction_family.lower() in ["disproportionation"]:
+            ind1 = self.conformer.rmg_molecule.get_labeled_atoms("*1")[0].sorting_label
+            ind2 = self.conformer.rmg_molecule.get_labeled_atoms("*2")[0].sorting_label
+            ind3 = self.conformer.rmg_molecule.get_labeled_atoms("*3")[0].sorting_label
+            ind4 = self.conformer.rmg_molecule.get_labeled_atoms("*4")[0].sorting_label
+
+            # 1, 2, and 4 are the main reactants but 3 should be kept nearby
+            combos += f"{(ind1 + 1)} {(ind2 + 1)} F\n"
+            combos += f"{(ind2 + 1)} {(ind4 + 1)} F\n"
+            combos += f"{(ind2 + 1)} {(ind3 + 1)} F\n"
+            combos += f"{(ind1 + 1)} {(ind2 + 1)} {(ind4 + 1)} F"
         else:
             logging.error(f"Reaction family {self.conformer.reaction_family} is not supported...")
             raise AssertionError
-
-        combos = ""
-        combos += f"{(ind1 + 1)} {(ind2 + 1)} F\n"
-        combos += f"{(ind2 + 1)} {(ind3 + 1)} F\n"
-        combos += f"{(ind1 + 1)} {(ind2 + 1)} {(ind3 + 1)} F"
 
         ase_gaussian = ase.calculators.gaussian.Gaussian(
             mem=self.settings["mem"],
@@ -327,7 +339,7 @@ class Gaussian():
 
         indicies = []
         for i, atom in enumerate(self.conformer.rmg_molecule.atoms):
-            if not (atom.label != ""):
+            if atom.label == "":
                 indicies.append(i)
 
         addsec = ""
