@@ -228,8 +228,12 @@ def opt_conf(i):
 
     if isinstance(conformer, TS):
         label = conformer.reaction_label
-        ind1 = conformer.rmg_molecule.get_labeled_atoms("*1")[0].sorting_label
-        ind2 = conformer.rmg_molecule.get_labeled_atoms("*3")[0].sorting_label
+        if conformer.reaction_family == 'Disproportionation':
+            ind1 = conformer.rmg_molecule.get_labeled_atoms("*1")[0].sorting_label
+            ind2 = conformer.rmg_molecule.get_labeled_atoms("*2")[0].sorting_label
+        else:
+            ind1 = conformer.rmg_molecule.get_labeled_atoms("*1")[0].sorting_label
+            ind2 = conformer.rmg_molecule.get_labeled_atoms("*3")[0].sorting_label
         labels.append([ind1, ind2])
         type = 'ts'
     else:
