@@ -310,6 +310,11 @@ def opt_conf(i):
         logging.error('Could not add updated conformer to conformers dict')
 
     if conformer.save_results:
+        if not os.path.exists(conformer.results_dir):
+            try:
+                os.makedirs(conformer.results_dir)
+            except OSError:
+                logging.info(f"An error occured when creating {conformer.results_dir}")
         with open(result_file, "w") as f:
             ase.io.extxyz.write_xyz(f, conformer.ase_molecule, comment=f"energy={energy}")
 
@@ -327,6 +332,7 @@ def systematic_search(
     max_combos=-1,  # default is no maximum
     max_conformers=-1,  # default is no maximum
     count_combos=False,  # return the number of combinations
+    return_combos=False  # return the conformer geometries without optimization
 ):
     """
     Perfoms a systematic conformer analysis of a `Conformer` or a `TS` object
@@ -394,7 +400,7 @@ def systematic_search(
         logging.info("Returning origional conformer")
         return [conformer]
 
-    _, torsions = find_terminal_torsions(conformer)
+    _, non_terminal_torsions = find_terminal_torsions(conformer)
 
     calc = conformer.ase_molecule.get_calculator()
     if isinstance(calc, ase.calculators.calculator.FileIOCalculator):
@@ -410,21 +416,22 @@ def systematic_search(
 
         combinations[index] = combo
 
-        torsions, cistrans, chiral_centers = combo
+        torsion_angles, cistrans, chiral_centers = combo
+        assert len(non_terminal_torsions) == len(torsion_angles), "The number of torsions and torsion angles do not match"
         copy_conf = conformer.copy()
 
-        for i, torsion in enumerate(torsions):
+        for i, torsion_angle in enumerate(torsion_angles):
 
-            tor = copy_conf.torsions[i]
-            i, j, k, ll = tor.atom_indices
-            mask = tor.mask
+            torsion_object = non_terminal_torsions[i]  # originally this information came from copy_conf, but we need the rotor index...
+            ii, j, k, ll = torsion_object.atom_indices
+            mask = torsion_object.mask
 
             copy_conf.ase_molecule.set_dihedral(
-                a1=i,
+                a1=ii,
                 a2=j,
                 a3=k,
                 a4=ll,
-                angle=torsion,
+                angle=torsion_angle,
                 mask=mask
             )
             copy_conf.update_coords()
@@ -443,16 +450,20 @@ def systematic_search(
         conformers[index] = copy_conf
 
     logging.info(f"Conformers to investigate: {len(conformers)}")
+
+    if return_combos:
+        return conformers
+
     num_threads = multiprocessing.cpu_count() - 1 or 1
     pool = multiprocessing.Pool(processes=num_threads)
-    """
-    to_calculate_list = []
-    for i, conformer in list(conformers.items()):
-        to_calculate_list.append(conformer)
-    """
     results = pool.map(opt_conf, range(len(conformers)))
     pool.close()
     pool.join()
+
+    # for i in range(len(conformers)):
+    #     results.append(opt_conf(i))
+
+
     energies = []
     for i, energy in enumerate(results):
         energies.append((conformers[i], energy))
