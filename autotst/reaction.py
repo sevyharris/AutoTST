@@ -349,6 +349,8 @@ class Reaction():
 
             # looping though each reaction family and each combination of reactants and products
             for name, family in list(self.rmg_database.kinetics.families.items()):
+                if match:
+                    break
                 logging.info(f"Trying to match reaction to {family}")
                 for rmg_reactants, rmg_products in combos_to_try:
                     # Making a test reaction
@@ -359,7 +361,7 @@ class Reaction():
                     try:  # Trying to label the reaction
                         labeled_r, labeled_p = family.get_labeled_reactants_and_products(
                             test_reaction.reactants, test_reaction.products)
-                    except (IndexError, rmgpy.exceptions.ActionError):  # Failed to match a reaction to the family
+                    except (IndexError, ValueError, rmgpy.exceptions.ActionError):  # Failed to match a reaction to the family
                         logging.error(f"Couldn't match {test_reaction} to {name}, trying different combination...")
                         continue
 
@@ -390,6 +392,7 @@ class Reaction():
                         match = True
                         final_family = family
                         final_name = name
+                        break
 
         elif self.rmg_reaction:  # RMGReaction but no label
             rmg_reactants = []
@@ -412,6 +415,8 @@ class Reaction():
             ))
 
             for name, family in list(self.rmg_database.kinetics.families.items()):
+                if match:
+                    break
                 logging.info(f"Trying to match reaction to {name}")
                 for rmg_reactants, rmg_products in combos_to_try:
                     # Making a test reaction
@@ -425,13 +430,13 @@ class Reaction():
                         if not (labeled_r and labeled_p):
                             logging.error("Unable to determine a reaction for the forward direction. Trying the reverse direction.")
                             raise rmgpy.exceptions.ActionError
-                    except ValueError:
+                    except (ValueError, rmgpy.exceptions.ActionError):
                         try:
                             # Trying the reverse reaction if the forward reaction doesn't work
                             # This is useful for R_Addition reactions
                             labeled_r, labeled_p = family.get_labeled_reactants_and_products(
                                 test_reaction.products, test_reaction.reactants)
-                        except ValueError:
+                        except (ValueError, rmgpy.exceptions.ActionError):
                             logging.error(f"Couldn't match {test_reaction} to {name}, trying different combination...")
                             continue
 
@@ -462,8 +467,10 @@ class Reaction():
                         match = True
                         final_family = family
                         final_name = name
+                        break
 
-        assert match, "Could not idetify labeled reactants and products"
+
+        assert match, "Could not identify labeled reactants and products"
 
         reaction_list = final_family.generate_reactions(
             match_reaction.reactants, match_reaction.products)
@@ -901,8 +908,12 @@ class TS(Conformer):
         """
         A method to edit the bounds matrix using labels and distance data
         """
-
-        lbl1, lbl2, lbl3 = self.labels
+        if self.reaction_family.lower() in ['h_abstraction', 'intra_h_migration', 'r_addition_multiplebond']:
+            lbl1, lbl2, lbl3 = self.labels
+        elif self.reaction_family.lower() in ['disproportionation']:
+            lbl1, lbl2, lbl3 = self.labels  # TODO- check if this is right??
+        else:
+            raise ValueError(f"Reaction family {self.reaction_family} not supported.")
 
         sect = []
 
