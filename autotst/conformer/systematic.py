@@ -228,6 +228,7 @@ def opt_conf(i):
 
     if isinstance(conformer, TS):
         label = conformer.reaction_label
+
         if conformer.reaction_family == 'Disproportionation':
             ind1 = conformer.rmg_molecule.get_labeled_atoms("*1")[0].sorting_label
             ind2 = conformer.rmg_molecule.get_labeled_atoms("*2")[0].sorting_label
@@ -287,6 +288,8 @@ def opt_conf(i):
         conformer.ase_molecule.set_constraint(c)
         try:
             opt.run(fmax=0.20, steps=1e6)
+            # runs the optimization, but where does it save the result? or is this supposed to happen in place??
+
         except RuntimeError:
             logging.info("Optimization failed...we will use the unconverged geometry")
             converged = True
@@ -426,6 +429,8 @@ def systematic_search(
             ii, j, k, ll = torsion_object.atom_indices
             mask = torsion_object.mask
 
+            torsion_angle += copy_conf.ase_molecule.get_dihedral(ii, j, k, ll)
+
             copy_conf.ase_molecule.set_dihedral(
                 a1=ii,
                 a2=j,
@@ -434,15 +439,15 @@ def systematic_search(
                 angle=torsion_angle,
                 mask=mask
             )
-            copy_conf.update_coords()
+            copy_conf.update_coords_from("ase")
 
-        for i, e_z in enumerate(cistrans):
-            ct = copy_conf.cistrans[i]
-            copy_conf.set_cistrans(ct.index, e_z)
+        # for i, e_z in enumerate(cistrans):
+        #     ct = copy_conf.cistrans[i]
+        #     copy_conf.set_cistrans(ct.index, e_z)
 
-        for i, s_r in enumerate(chiral_centers):
-            center = copy_conf.chiral_centers[i]
-            copy_conf.set_chirality(center.index, s_r)
+        # for i, s_r in enumerate(chiral_centers):
+        #     center = copy_conf.chiral_centers[i]
+        #     copy_conf.set_chirality(center.index, s_r)
 
         copy_conf.update_coords_from("ase")
         copy_conf.ase_molecule.set_calculator(calc)
