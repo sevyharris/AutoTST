@@ -484,7 +484,10 @@ class Conformer():
             if self.rmg_molecule.is_linear():  # No torsions if linear molecule
                 self.torsions = []
                 return []
-        except ValueError:
+        except (ValueError, IndexError):
+            # IndexError is for case where you have a single atom not formally bonded to
+            # the rest of the molecule, so it errors out because there are no bonds
+            # see reaction 289 CCCC+[O]_[OH]+[CH2]CCC
             pass
 
         for bond1 in self.rdkit_molecule.GetBonds():

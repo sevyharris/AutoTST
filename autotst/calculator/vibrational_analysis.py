@@ -262,7 +262,7 @@ class VibrationalAnalysis():
                 return True
             else:
                 logging.info(
-                    "Cannot reasonably say that we have arrived at a TS through vibrational analysis.")
+                    "Cannot reasonably say that we have arrived at a TS through vibrational analysis.") 
                 return False
         except AssertionError:
             logging.info("Something went wrong when attempting vibrational analysis...")

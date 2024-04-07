@@ -469,7 +469,6 @@ class Reaction():
                         final_name = name
                         break
 
-
         assert match, "Could not identify labeled reactants and products"
 
         reaction_list = final_family.generate_reactions(

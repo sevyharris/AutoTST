@@ -294,7 +294,7 @@ class Gaussian():
             # 1, 2, and 4 are the main reactants but 3 should be kept nearby
             combos += f"{(ind1 + 1)} {(ind2 + 1)} F\n"
             combos += f"{(ind2 + 1)} {(ind4 + 1)} F\n"
-            combos += f"{(ind2 + 1)} {(ind3 + 1)} F\n"
+            # combos += f"{(ind2 + 1)} {(ind3 + 1)} F\n"
             combos += f"{(ind1 + 1)} {(ind2 + 1)} {(ind4 + 1)} F"
         else:
             logging.error(f"Reaction family {self.conformer.reaction_family} is not supported...")
