@@ -498,7 +498,7 @@ class Conformer():
 
             atom1 = bond1.GetBeginAtom()
             atom2 = bond1.GetEndAtom()
-            if atom1.IsInRing() or atom2.IsInRing():
+            if atom1.IsInRing() and atom2.IsInRing():  # this should have been both atoms. Can have a rotor off a ring
                 # Making sure that bond1 we're looking at are not in a ring
                 continue
 
