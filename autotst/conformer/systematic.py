@@ -228,15 +228,32 @@ def opt_conf(i):
 
     if isinstance(conformer, TS):
         label = conformer.reaction_label
-
         if conformer.reaction_family == 'Disproportionation':
             ind1 = conformer.rmg_molecule.get_labeled_atoms("*1")[0].sorting_label
             ind2 = conformer.rmg_molecule.get_labeled_atoms("*2")[0].sorting_label
+            ind3 = conformer.rmg_molecule.get_labeled_atoms("*4")[0].sorting_label
         else:
             ind1 = conformer.rmg_molecule.get_labeled_atoms("*1")[0].sorting_label
             ind2 = conformer.rmg_molecule.get_labeled_atoms("*3")[0].sorting_label
-        labels.append([ind1, ind2])
+            ind3 = conformer.rmg_molecule.get_labeled_atoms("*2")[0].sorting_label
+
+        if [ind1, ind2] not in labels and [ind2, ind1] not in labels:
+            labels.append([ind1, ind2])
+        if [ind2, ind3] not in labels and [ind3, ind2] not in labels:
+            labels.append([ind2, ind3])
+        if [ind1, ind3] not in labels and [ind3, ind1] not in labels:
+            labels.append([ind1, ind3])
+
+        # TODO - not sure if this is helping things
+        # if conformer.reaction_family == 'Disproportionation':
+        #     ind1 = conformer.rmg_molecule.get_labeled_atoms("*1")[0].sorting_label
+        #     ind2 = conformer.rmg_molecule.get_labeled_atoms("*2")[0].sorting_label
+        # else:
+        #     ind1 = conformer.rmg_molecule.get_labeled_atoms("*1")[0].sorting_label
+        #     ind2 = conformer.rmg_molecule.get_labeled_atoms("*3")[0].sorting_label
+        # labels.append([ind1, ind2])
         type = 'ts'
+
     else:
         label = conformer.smiles
         type = 'species'

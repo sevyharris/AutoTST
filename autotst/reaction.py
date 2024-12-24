@@ -1068,7 +1068,9 @@ class TS(Conformer):
             self.get_rdkit_mol()
             test_conf._rdkit_molecule = self._pseudo_geometry
         test_conf._ase_molecule = self.ase_molecule
-        return test_conf.get_torsions()
+        torsion_list = test_conf.get_torsions()
+        self.torsions = torsion_list
+        return torsion_list
 
     def get_angles(self):
         test_conf = Conformer()
