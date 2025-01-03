@@ -80,7 +80,9 @@ class Reaction():
             "R_Addition_MultipleBond",
             "H_Abstraction",
             "intra_H_migration",
-            "Disproportionation"
+            "Disproportionation",
+            "1,3_sigmatropic_rearrangement",
+            "Retroene",
         ]
 
         self.label = label
@@ -175,6 +177,8 @@ class Reaction():
             "H_Abstraction",
             "intra_H_migration",
             "Disproportionation",
+            "1,3_sigmatropic_rearrangement",
+            "Retroene",
         ]
         try:
             rmg_database.load(
@@ -267,8 +271,11 @@ class Reaction():
 
                 self._distance_data.distances["d13"] -= self._distance_data.uncertainties["d13"] / 2
         except KeyError:
-            print('debug distances are', self._distance_data.distances)
-            raise
+            if self.reaction_family not in self.possible_families[0:3]:
+                print("Skipping check of d12, d13, and d23 because this is not one of the original families")
+            else:
+                print('debug distances are', self._distance_data.distances)
+                raise
         logging.info(f"The distance data is as follows: {self._distance_data}")
 
         return self._distance_data
@@ -341,7 +348,6 @@ class Reaction():
                 return rmgpy.molecule.Molecule(smiles=smile).generate_resonance_structures()
             rmg_reactants = [get_rmg_mol(smile) for smile in r.split("+")]
             rmg_products = [get_rmg_mol(smile) for smile in p.split("+")]
-
             combos_to_try = list(itertools.product(
                 list(itertools.product(*rmg_reactants)),
                 list(itertools.product(*rmg_products))
@@ -352,6 +358,7 @@ class Reaction():
                 if match:
                     break
                 logging.info(f"Trying to match reaction to {family}")
+
                 for rmg_reactants, rmg_products in combos_to_try:
                     # Making a test reaction
                     test_reaction = rmgpy.reaction.Reaction(
@@ -751,12 +758,13 @@ class TS(Conformer):
 
     def get_pseudo_geometry(self):
         """
-        A method to create a _pseduo_geometry. Essentailly an RDKit molecule with a fake bond drawn
+        A method to create a _pseudo_geometry. Essentially an RDKit molecule with a fake bond drawn
         between reacting atoms which are not bound to be used in other processes
         """
         if self.labels is None:
             self.get_labels()
-        if len(self.labels) == 3:
+        if len(self.labels) in [3, 4, 6]:
+            # these are the possible families that have been implemented
 
             rd_copy = rdkit.Chem.RWMol(self._rdkit_molecule.__copy__())
 
@@ -770,7 +778,7 @@ class TS(Conformer):
 
             self._pseudo_geometry = rd_copy
         else:
-            logging.warning('There are not 3 labels, setting the _pseudo_geometry to the unedited rdkit molecule')
+            logging.warning('There are not 3, 4, or 6 labels, setting the _pseudo_geometry to the unedited rdkit molecule')
             self._pseudo_geometry = self.rdkit_molecule
         return self._pseudo_geometry
 
@@ -897,6 +905,24 @@ class TS(Conformer):
 
             labels = [lbl1, lbl2, lbl3]
             atom_match = ((lbl1,), (lbl2,), (lbl3,))
+        elif self.reaction_family.lower() in ['1,3_sigmatropic_rearrangement']:
+            lbl1 = self.rmg_molecule.get_all_labeled_atoms()["*1"].sorting_label
+            lbl2 = self.rmg_molecule.get_all_labeled_atoms()["*2"].sorting_label
+            lbl3 = self.rmg_molecule.get_all_labeled_atoms()["*3"].sorting_label
+            lbl4 = self.rmg_molecule.get_all_labeled_atoms()["*4"].sorting_label
+
+            labels = [lbl1, lbl2, lbl3, lbl4]
+            atom_match = ((lbl1,), (lbl2,), (lbl3,), (lbl4,))
+        elif self.reaction_family.lower() in ['retroene']:
+            lbl1 = self.rmg_molecule.get_all_labeled_atoms()["*1"].sorting_label
+            lbl2 = self.rmg_molecule.get_all_labeled_atoms()["*2"].sorting_label
+            lbl3 = self.rmg_molecule.get_all_labeled_atoms()["*3"].sorting_label
+            lbl4 = self.rmg_molecule.get_all_labeled_atoms()["*4"].sorting_label
+            lbl5 = self.rmg_molecule.get_all_labeled_atoms()["*5"].sorting_label
+            lbl6 = self.rmg_molecule.get_all_labeled_atoms()["*6"].sorting_label
+
+            labels = [lbl1, lbl2, lbl3, lbl4, lbl5, lbl5]
+            atom_match = ((lbl1,), (lbl2,), (lbl3,), (lbl4,), (lbl5,), (lbl6,))
 
         # logging.info(f"The labled atoms are {labels}.")
         self.labels = labels
@@ -907,34 +933,87 @@ class TS(Conformer):
         """
         A method to edit the bounds matrix using labels and distance data
         """
-        if self.reaction_family.lower() in ['h_abstraction', 'intra_h_migration', 'r_addition_multiplebond']:
-            lbl1, lbl2, lbl3 = self.labels
-        elif self.reaction_family.lower() in ['disproportionation']:
-            lbl1, lbl2, lbl3 = self.labels  # TODO- check if this is right??
-        else:
-            raise ValueError(f"Reaction family {self.reaction_family} not supported.")
 
         sect = []
-
         for atom in self.rmg_molecule.split()[0].atoms:
             sect.append(atom.sorting_label)
 
-        uncertainties = {'d12': 0.02, 'd13': 0.02, 'd23': 0.02}
-        self.bm = self.set_limits(
-            lbl1,
-            lbl2,
-            self.distance_data.distances['d12'],
-            uncertainties['d12'])
-        self.bm = self.set_limits(
-            lbl2,
-            lbl3,
-            self.distance_data.distances['d23'],
-            uncertainties['d23'])
-        self.bm = self.set_limits(
-            lbl1,
-            lbl3,
-            self.distance_data.distances['d13'],
-            uncertainties['d13'])
+        if self.reaction_family.lower() in ['h_abstraction', 'intra_h_migration', 'r_addition_multiplebond']:
+            lbl1, lbl2, lbl3 = self.labels
+            uncertainties = {'d12': 0.02, 'd13': 0.02, 'd23': 0.02}
+            self.bm = self.set_limits(
+                lbl1,
+                lbl2,
+                self.distance_data.distances['d12'],
+                uncertainties['d12'])
+            self.bm = self.set_limits(
+                lbl2,
+                lbl3,
+                self.distance_data.distances['d23'],
+                uncertainties['d23'])
+            self.bm = self.set_limits(
+                lbl1,
+                lbl3,
+                self.distance_data.distances['d13'],
+                uncertainties['d13'])
+        elif self.reaction_family.lower() in ['disproportionation']:
+            lbl1, lbl2, lbl3 = self.labels
+            # TODO - update actual numbering to match the numbers in the official family image/description
+            uncertainties = {'d12': 0.02, 'd13': 0.02, 'd23': 0.02}
+            self.bm = self.set_limits(
+                lbl1,
+                lbl2,
+                self.distance_data.distances['d12'],
+                uncertainties['d12'])
+            self.bm = self.set_limits(
+                lbl2,
+                lbl3,
+                self.distance_data.distances['d23'],
+                uncertainties['d23'])
+            self.bm = self.set_limits(
+                lbl1,
+                lbl3,
+                self.distance_data.distances['d13'],
+                uncertainties['d13'])
+        elif self.reaction_family.lower() in ['1,3_sigmatropic_rearrangement']:
+            lbl1, lbl2, lbl3, lbl4 = self.labels
+            uncertainty = 0.1
+            d14 = self.distance_data.distances['d14']
+            d34 = self.distance_data.distances['d34']
+            d13 = self.distance_data.distances['d13']
+            self.bm = self.set_limits(lbl1, lbl4, d14, uncertainty)
+            self.bm = self.set_limits(lbl3, lbl4, d34, uncertainty)
+            self.bm = self.set_limits(lbl1, lbl3, d13, uncertainty)
+        elif self.reaction_family.lower() in ['retroene']:
+            lbl1, lbl2, lbl3, lbl4, lbl5, lbl6 = self.labels
+            uncertainty = 0.1
+            d16 = self.distance_data.distances['d16']
+            d56 = self.distance_data.distances['d56']
+            d15 = self.distance_data.distances['d15']
+            d34 = self.distance_data.distances['d34']
+            self.bm = self.set_limits(lbl1, lbl6, d16, uncertainty)
+            self.bm = self.set_limits(lbl5, lbl6, d56, uncertainty)
+            self.bm = self.set_limits(lbl1, lbl5, d15, uncertainty)
+            self.bm = self.set_limits(lbl3, lbl4, d34, uncertainty)
+        else:
+            raise ValueError(f"Reaction family {self.reaction_family} not supported.")
+
+        # uncertainties = {'d12': 0.02, 'd13': 0.02, 'd23': 0.02}
+        # self.bm = self.set_limits(
+        #     lbl1,
+        #     lbl2,
+        #     self.distance_data.distances['d12'],
+        #     uncertainties['d12'])
+        # self.bm = self.set_limits(
+        #     lbl2,
+        #     lbl3,
+        #     self.distance_data.distances['d23'],
+        #     uncertainties['d23'])
+        # self.bm = self.set_limits(
+        #     lbl1,
+        #     lbl3,
+        #     self.distance_data.distances['d13'],
+        #     uncertainties['d13'])
 
         self.bm = self.bm_pre_edit(sect)
 

@@ -199,6 +199,8 @@ def opt_conf(i):
                 return energy
             except KeyError:
                 logging.info(f"No energy results in {result_file}")
+        if not os.path.exists(result_file) and conformer.save_results:
+            logging.debug(f'No result file for {result_num:05}. Calculating...')
 
     if not isinstance(conformer, TS):
         reference_mol = conformer.rmg_molecule.copy(deep=True)
@@ -285,6 +287,7 @@ def opt_conf(i):
             pass
         except AssertionError:
             logging.info("Bad eigenvalues probably ... use the unconverged geometry?")
+            pass
         if str(conformer.index) == 'ref':
             conformer.update_coords_from("ase")
             try:
@@ -314,7 +317,7 @@ def opt_conf(i):
         except AssertionError:
             logging.info("Bad eigenvalues probably ... use the unconverged geometry")
             converged = True
-
+            pass
     conformer.update_coords_from("ase")
     try:
         energy = conformer.ase_molecule.get_potential_energy()
@@ -338,7 +341,23 @@ def opt_conf(i):
         with open(result_file, "w") as f:
             ase.io.extxyz.write_xyz(f, conformer.ase_molecule, comment=f"energy={energy}")
 
+    logging.debug(f'Returning optimization energy {energy}')
     return energy  # return energy
+
+
+def check_redundant(args):
+    i, j, copy_1, copy_2, rmsd_cutoff = args
+    # copy_1 = df.conformer[i].copy()
+    # copy_2 = df.conformer[j].copy()
+    # # copy_1 = conformer_copies[i].rdkit_molecule
+    # # copy_2 = conformer_copies[j].rdkit_molecule
+    # copy_1 = rdkit.Chem.MolFromSmiles('CCCC')
+    # copy_2 = rdkit.Chem.MolFromSmiles('CCC')
+    rmsd = rdkit.Chem.rdMolAlign.GetBestRMS(copy_1, copy_2)
+    logging.debug(f'Done checking {i} {j} for redundancy')
+    if rmsd <= rmsd_cutoff:
+        return True
+    return False
 
 
 def systematic_search(
@@ -428,6 +447,8 @@ def systematic_search(
 
     results = []
     global conformers
+    global df
+    df = pd.DataFrame()
     conformers = {}
     combinations = {}
     logging.info(f"There are {len(combos)} possible conformers to investigate...")
@@ -443,16 +464,16 @@ def systematic_search(
         for i, torsion_angle in enumerate(torsion_angles):
 
             torsion_object = non_terminal_torsions[i]  # originally this information came from copy_conf, but we need the rotor index...
-            ii, j, k, ll = torsion_object.atom_indices
+            atom1, atom2, atom3, atom4 = torsion_object.atom_indices
             mask = torsion_object.mask
 
-            torsion_angle += copy_conf.ase_molecule.get_dihedral(ii, j, k, ll)
+            torsion_angle += copy_conf.ase_molecule.get_dihedral(atom1, atom2, atom3, atom4)
 
             copy_conf.ase_molecule.set_dihedral(
-                a1=ii,
-                a2=j,
-                a3=k,
-                a4=ll,
+                a1=atom1,
+                a2=atom2,
+                a3=atom3,
+                a4=atom4,
                 angle=torsion_angle,
                 mask=mask
             )
@@ -477,14 +498,15 @@ def systematic_search(
         return conformers
 
     num_threads = multiprocessing.cpu_count() - 1 or 1
+    logging.debug(f'Running optimizations with {num_threads} threads')
     pool = multiprocessing.Pool(processes=num_threads)
     results = pool.map(opt_conf, range(len(conformers)))
     pool.close()
     pool.join()
 
+    logging.debug('optimization of all conformers is complete')
     # for i in range(len(conformers)):
     #     results.append(opt_conf(i))
-
 
     energies = []
     for i, energy in enumerate(results):
@@ -493,16 +515,57 @@ def systematic_search(
     df = pd.DataFrame(energies, columns=["conformer", "energy"])
     df = df[df.energy < df.energy.min() + (energy_cutoff * ase.units.kcal / ase.units.mol
             / ase.units.eV)].sort_values("energy").reset_index(drop=True)
+    # cut to 1.5x length of maximum we'll keep to save time on redundancy check
+    first_cut = int(1.5 * max_conformers)
+    if max_conformers > 0 and first_cut < len(df):
+        df = df[:first_cut]
 
     redundant = []
-    conformer_copies = [conf.copy() for conf in df.conformer]
-    for i, j in itertools.combinations(range(len(df.conformer)), 2):
-        copy_1 = conformer_copies[i].rdkit_molecule
-        copy_2 = conformer_copies[j].rdkit_molecule
-        rmsd = rdkit.Chem.rdMolAlign.GetBestRMS(copy_1, copy_2)
-        if rmsd <= rmsd_cutoff:
-            redundant.append(j)
+    list_of_redundancy_checks = list(itertools.combinations(range(len(df.conformer)), 2))
+    use_existing_redundancy_results = False
+    # adding option to save because this takes FOREVER
+    if conformers[0].save_results:
+        # check for previous results
+        redundancy_file = os.path.join(conformer.results_dir, f"redundancy_{conformers[0].save_offset:05}.npy")
+        redundant = [int(a) for a in np.load(redundancy_file)]
+        if len(redundant) != len(list_of_redundancy_checks):
+            redundant = []  # only use if length of calculations is same as results
 
+    if not redundant:
+        conformer_copies = [conf.copy() for conf in df.conformer]
+        logging.debug('Checking for redundancy')
+
+        args = [(
+            int(list_of_redundancy_checks[k][0]),
+            int(list_of_redundancy_checks[k][1]),
+            conformer_copies[list_of_redundancy_checks[k][0]].rdkit_molecule,
+            conformer_copies[list_of_redundancy_checks[k][1]].rdkit_molecule,
+            float(rmsd_cutoff)) for k in range(len(list_of_redundancy_checks))]
+
+        # do redundancy check in parallel
+        pool = multiprocessing.Pool(processes=num_threads)
+        redundant_results = pool.map(check_redundant, args)
+        pool.close()
+        pool.join()
+
+        for k in range(len(redundant_results)):
+            if redundant_results[k]:
+                redundant.append(list_of_redundancy_checks[k][1])
+
+        if conformers[0].save_results:
+            np.save(redundancy_file, redundant)
+
+    # for i, j in itertools.combinations(range(len(df.conformer)), 2):
+    #     # should do this in parallel
+    #     copy_1 = conformer_copies[i].rdkit_molecule
+    #     copy_2 = conformer_copies[j].rdkit_molecule
+    #     rmsd = rdkit.Chem.rdMolAlign.GetBestRMS(copy_1, copy_2)
+    #     if rmsd <= rmsd_cutoff:
+    #         redundant.append(j)
+    #         logging.debug(f'Found redundant conformers {i} and {j}')
+    #     logging.debug(f'Done checking {i} {j} for redundancy')
+
+    logging.debug('Dropping redundant items in set')
     redundant = list(set(redundant))
     df.drop(df.index[redundant], inplace=True)
 

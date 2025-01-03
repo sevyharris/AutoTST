@@ -296,6 +296,26 @@ class Gaussian():
             combos += f"{(ind2 + 1)} {(ind4 + 1)} F\n"
             # combos += f"{(ind2 + 1)} {(ind3 + 1)} F\n"
             combos += f"{(ind1 + 1)} {(ind2 + 1)} {(ind4 + 1)} F"
+        elif self.conformer.reaction_family.lower() in ['1,3_sigmatropic_rearrangement']:
+            ind1 = self.conformer.rmg_molecule.get_labeled_atoms("*1")[0].sorting_label
+            ind2 = self.conformer.rmg_molecule.get_labeled_atoms("*2")[0].sorting_label
+            ind3 = self.conformer.rmg_molecule.get_labeled_atoms("*3")[0].sorting_label
+            ind4 = self.conformer.rmg_molecule.get_labeled_atoms("*4")[0].sorting_label
+
+            # Freeze the shell, consisting of bonds 1-4, 3-4 and angle 1-4-3
+            combos += f"{(ind1 + 1)} {(ind4 + 1)} F\n"
+            combos += f"{(ind3 + 1)} {(ind4 + 1)} F\n"
+            combos += f"{(ind1 + 1)} {(ind4 + 1)} {(ind3 + 1)} F"
+        elif self.conformer.reaction_family.lower() in ['retroene']:
+            ind1 = self.conformer.rmg_molecule.get_labeled_atoms("*1")[0].sorting_label
+            ind2 = self.conformer.rmg_molecule.get_labeled_atoms("*2")[0].sorting_label
+            ind3 = self.conformer.rmg_molecule.get_labeled_atoms("*3")[0].sorting_label
+            ind4 = self.conformer.rmg_molecule.get_labeled_atoms("*4")[0].sorting_label
+            ind5 = self.conformer.rmg_molecule.get_labeled_atoms("*5")[0].sorting_label
+            ind6 = self.conformer.rmg_molecule.get_labeled_atoms("*6")[0].sorting_label
+
+            raise NotImplementedError
+            # TODO - figure out what constitutes the shell and freeze that
         else:
             logging.error(f"Reaction family {self.conformer.reaction_family} is not supported...")
             raise AssertionError

@@ -403,7 +403,12 @@ class TransitionStateDepository(rmgpy.data.base.Database):
             rxn_string = entry.label
             # Convert the reactants and products to Species objects using the
             # speciesDict
-            reactants, products = rxn_string.split('=')
+            try:
+                reactants, products = rxn_string.split('=')
+            except ValueError:
+                print('cannot have = in species name')
+                print('this is the entry', entry)
+                print('this is the reaction string', rxn_string)
             reversible = True
             if '<=>' in rxn_string:
                 reactants = reactants[:-1]
