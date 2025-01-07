@@ -346,13 +346,11 @@ def opt_conf(i):
 
 
 def check_redundant(args):
-    i, j, copy_1, copy_2, rmsd_cutoff = args
-    # copy_1 = df.conformer[i].copy()
-    # copy_2 = df.conformer[j].copy()
-    # # copy_1 = conformer_copies[i].rdkit_molecule
-    # # copy_2 = conformer_copies[j].rdkit_molecule
-    # copy_1 = rdkit.Chem.MolFromSmiles('CCCC')
-    # copy_2 = rdkit.Chem.MolFromSmiles('CCC')
+    # cutoff is time at which we give up on the redundancy check
+    i, j, copy_1, copy_2, rmsd_cutoff, cutoff_time = args
+    if time.time() > cutoff_time:
+        return False
+
     rmsd = rdkit.Chem.rdMolAlign.GetBestRMS(copy_1, copy_2)
     logging.debug(f'Done checking {i} {j} for redundancy')
     if rmsd <= rmsd_cutoff:
@@ -505,8 +503,7 @@ def systematic_search(
     pool.join()
 
     logging.debug('optimization of all conformers is complete')
-    # for i in range(len(conformers)):
-    #     results.append(opt_conf(i))
+
 
     energies = []
     for i, energy in enumerate(results):
@@ -516,7 +513,7 @@ def systematic_search(
     df = df[df.energy < df.energy.min() + (energy_cutoff * ase.units.kcal / ase.units.mol
             / ase.units.eV)].sort_values("energy").reset_index(drop=True)
     # cut to 1.5x length of maximum we'll keep to save time on redundancy check
-    first_cut = int(1.5 * max_conformers)
+    first_cut = int(3 * max_conformers)
     if max_conformers > 0 and first_cut < len(df):
         df = df[:first_cut]
 
@@ -527,33 +524,51 @@ def systematic_search(
     if conformers[0].save_results:
         # check for previous results
         redundancy_file = os.path.join(conformer.results_dir, f"redundancy_{conformers[0].save_offset:05}.npy")
-        redundant = [int(a) for a in np.load(redundancy_file)]
-        if len(redundant) != len(list_of_redundancy_checks):
-            redundant = []  # only use if length of calculations is same as results
+        if os.path.exists(redundancy_file):
+            redundant_results = [int(a) for a in np.load(redundancy_file)]
+
+            if len(redundant_results) == len(list_of_redundancy_checks):
+                # only use if length of calculations is same as results
+                for k in range(len(redundant_results)):
+                    if redundant_results[k]:
+                        redundant.append(list_of_redundancy_checks[k][1])
 
     if not redundant:
         conformer_copies = [conf.copy() for conf in df.conformer]
         logging.debug('Checking for redundancy')
+        TIMEOUT = 60.0 * 60.0  # spend 1 hour max checking for redundant items
+        cutoff_time = time.time() + 1.0 * 60.0 * 60.0  # spend 1 hour max checking for redundant items
+
+        logging.debug(f'{len(list_of_redundancy_checks)} checks to make')
 
         args = [(
             int(list_of_redundancy_checks[k][0]),
             int(list_of_redundancy_checks[k][1]),
             conformer_copies[list_of_redundancy_checks[k][0]].rdkit_molecule,
             conformer_copies[list_of_redundancy_checks[k][1]].rdkit_molecule,
-            float(rmsd_cutoff)) for k in range(len(list_of_redundancy_checks))]
+            float(rmsd_cutoff),
+            cutoff_time) for k in range(len(list_of_redundancy_checks))]
 
-        # do redundancy check in parallel
+        logging.debug('Starting the thread pool')
         pool = multiprocessing.Pool(processes=num_threads)
-        redundant_results = pool.map(check_redundant, args)
-        pool.close()
-        pool.join()
+        results = [pool.apply_async(check_redundant, args=(x,)) for x in args]
+        time.sleep(TIMEOUT)
+        pool.terminate()  # all processes, busy or idle, will be terminated
+        logging.debug('Pool terminated!')
+        redundant_results = [res.get() if res.ready() else False for res in results]
+
+        # # do redundancy check in parallel
+        # pool = multiprocessing.Pool(processes=num_threads)
+        # redundant_results = pool.map(check_redundant, args)
+        # pool.close()
+        # pool.join()
+
+        if conformers[0].save_results:
+            np.save(redundancy_file, redundant_results)  # need to save the whole list of results as a check that n_combos etc hasn't changed
 
         for k in range(len(redundant_results)):
             if redundant_results[k]:
                 redundant.append(list_of_redundancy_checks[k][1])
-
-        if conformers[0].save_results:
-            np.save(redundancy_file, redundant)
 
     # for i, j in itertools.combinations(range(len(df.conformer)), 2):
     #     # should do this in parallel
@@ -597,6 +612,4 @@ def systematic_search(
 
     logging.info(f"We have identified {len(confs)} unique, low-energy conformers for {conformer}")
 
-    # note how many conformers were investigated for the save_offset
-    conformer.save_offset = len(conformers)
     return confs

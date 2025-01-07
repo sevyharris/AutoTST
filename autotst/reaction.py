@@ -437,13 +437,13 @@ class Reaction():
                         if not (labeled_r and labeled_p):
                             logging.error("Unable to determine a reaction for the forward direction. Trying the reverse direction.")
                             raise rmgpy.exceptions.ActionError
-                    except (ValueError, rmgpy.exceptions.ActionError):
+                    except (IndexError, ValueError, rmgpy.exceptions.ActionError):
                         try:
                             # Trying the reverse reaction if the forward reaction doesn't work
                             # This is useful for R_Addition reactions
                             labeled_r, labeled_p = family.get_labeled_reactants_and_products(
                                 test_reaction.products, test_reaction.reactants)
-                        except (ValueError, rmgpy.exceptions.ActionError):
+                        except (IndexError, ValueError, rmgpy.exceptions.ActionError):
                             logging.error(f"Couldn't match {test_reaction} to {name}, trying different combination...")
                             continue
 
@@ -600,12 +600,11 @@ class Reaction():
 
         from .conformer.systematic import systematic_search
 
-        save_offset = 0
+        conformer.save_offset = 0
         for direction, conformers in self.ts.items():
             conformer = conformers[0]
             conformer.save_results = save_results
             conformer.results_dir = results_dir
-            conformer.save_offset = save_offset
             try:
                 abc = conformer.ase_molecule
                 logging.warning(f"abc={abc}")
@@ -617,7 +616,7 @@ class Reaction():
             for conformer in conformers:
                 conformer.direction = direction
             self.ts[direction] = conformers
-            save_offset += conformer.save_offset
+            conformer.save_offset += max_combos
 
         return self.ts
 
