@@ -600,9 +600,10 @@ class Reaction():
 
         from .conformer.systematic import systematic_search
 
-        conformer.save_offset = 0
+        save_offset = 0
         for direction, conformers in self.ts.items():
             conformer = conformers[0]
+            conformer.save_offset = save_offset
             conformer.save_results = save_results
             conformer.results_dir = results_dir
             try:
@@ -616,7 +617,7 @@ class Reaction():
             for conformer in conformers:
                 conformer.direction = direction
             self.ts[direction] = conformers
-            conformer.save_offset += max_combos
+            save_offset += max_combos
 
         return self.ts
 
