@@ -232,7 +232,7 @@ class Gaussian():
             scratch=new_scratch,
             method=self.settings["method"],
             basis=self.settings["basis"],
-            extra=f"opt=(calcfc,maxcycles=900,{self.convergence}) freq IOP(7/33=1,2/16=3) scf=(maxcycle=900)",
+            extra=f"opt=(calcfc,maxcycles=900,{self.convergence}) freq IOP(7/33=1,2/9=2000,2/16=3) scf=(maxcycle=900)",
             multiplicity=self.conformer.rmg_molecule.multiplicity)
         ase_gaussian.atoms = self.conformer.ase_molecule
 
@@ -441,7 +441,7 @@ class Gaussian():
             scratch=new_scratch,
             method=self.settings["method"],
             basis=self.settings["basis"],
-            extra="opt=(ts,calcfc,noeigentest,maxcycles=900) freq scf=(maxcycle=900) IOP(7/33=1,2/16=3)",
+            extra="opt=(ts,calcfc,noeigentest,maxcycles=900) freq scf=(maxcycle=900) IOP(7/33=1,2/9=2000,2/16=3)",
             multiplicity=self.conformer.rmg_molecule.multiplicity)
         ase_gaussian.atoms = self.conformer.ase_molecule
         try:
