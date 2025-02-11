@@ -34,6 +34,7 @@ import os
 import time
 import pandas as pd
 import numpy as np
+import functools
 import multiprocessing
 from copy import deepcopy
 
@@ -367,7 +368,7 @@ def sorted_hash(atoms):
 
 def overlap_molecule(atomsA, atomsB, translate_indices):  # assumes order is same
     # returns an atoms object of atoms B transformed to overlap with atomsA
-    new_atoms = copy.deepcopy(atomsB)
+    new_atoms = deepcopy(atomsB)
 
     # Translate
     translation_vector = atomsA.positions[translate_indices[0], :] - atomsB.positions[translate_indices[0], :]
@@ -381,8 +382,9 @@ def overlap_molecule(atomsA, atomsB, translate_indices):  # assumes order is sam
     return new_atoms
 
 
-def check_redundant_ase(atoms1, atoms2):
+def check_redundant(atoms1, atoms2):
     # try rotating one molecule into the other's orientation and see if they produce the same hash string
+    # returns True if redundant
     A = sorted_hash(atoms1)
     B = sorted_hash(atoms2)
     if A == B:
@@ -393,19 +395,6 @@ def check_redundant_ase(atoms1, atoms2):
         B = sorted_hash(new_atoms)
         if A == B:
             return True
-    return False
-
-
-def check_redundant(args):
-    # cutoff is time at which we give up on the redundancy check
-    i, j, copy_1, copy_2, rmsd_cutoff, cutoff_time = args
-    if time.time() > cutoff_time:
-        return False
-
-    rmsd = rdkit.Chem.rdMolAlign.GetBestRMS(copy_1, copy_2)
-    logging.debug(f'Done checking {i} {j} for redundancy')
-    if rmsd <= rmsd_cutoff:
-        return True
     return False
 
 
@@ -555,7 +544,6 @@ def systematic_search(
 
     logging.debug('optimization of all conformers is complete')
 
-
     energies = []
     for i, energy in enumerate(results):
         energies.append((conformers[i], energy))
@@ -569,73 +557,19 @@ def systematic_search(
         df = df[:first_cut]
 
     redundant = []
-    list_of_redundancy_checks = list(itertools.combinations(range(len(df.conformer)), 2))
-    use_existing_redundancy_results = False
-    # adding option to save because this takes FOREVER
-    if conformers[0].save_results:
-        # check for previous results
-        redundancy_file = os.path.join(conformer.results_dir, f"redundancy_{conformers[0].save_offset:05}.npy")
-        if os.path.exists(redundancy_file):
-            redundant_results = [int(a) for a in np.load(redundancy_file)]
-
-            if len(redundant_results) == len(list_of_redundancy_checks):
-                # only use if length of calculations is same as results
-                for k in range(len(redundant_results)):
-                    if redundant_results[k]:
-                        redundant.append(list_of_redundancy_checks[k][1])
-
-    if not redundant:
-        conformer_copies = [conf.copy() for conf in df.conformer]
-        logging.debug('Checking for redundancy')
-        TIMEOUT = 60.0 * 60.0  # spend 1 hour max checking for redundant items
-        cutoff_time = time.time() + 1.0 * 60.0 * 60.0  # spend 1 hour max checking for redundant items
-
-        logging.debug(f'{len(list_of_redundancy_checks)} checks to make')
-
-        args = [(
-            int(list_of_redundancy_checks[k][0]),
-            int(list_of_redundancy_checks[k][1]),
-            conformer_copies[list_of_redundancy_checks[k][0]].rdkit_molecule,
-            conformer_copies[list_of_redundancy_checks[k][1]].rdkit_molecule,
-            float(rmsd_cutoff),
-            cutoff_time) for k in range(len(list_of_redundancy_checks))]
-
-        logging.debug('Starting the thread pool')
-        pool = multiprocessing.Pool(processes=num_threads)
-        results = [pool.apply_async(check_redundant, args=(x,)) for x in args]
-        time.sleep(TIMEOUT)
-        pool.terminate()  # all processes, busy or idle, will be terminated
-        logging.debug('Pool terminated!')
-        redundant_results = [res.get() if res.ready() else False for res in results]
-
-        # # do redundancy check in parallel
-        # pool = multiprocessing.Pool(processes=num_threads)
-        # redundant_results = pool.map(check_redundant, args)
-        # pool.close()
-        # pool.join()
-
-        if conformers[0].save_results:
-            np.save(redundancy_file, redundant_results)  # need to save the whole list of results as a check that n_combos etc hasn't changed
-
-        for k in range(len(redundant_results)):
-            if redundant_results[k]:
-                redundant.append(list_of_redundancy_checks[k][1])
-
-    # for i, j in itertools.combinations(range(len(df.conformer)), 2):
-    #     # should do this in parallel
-    #     copy_1 = conformer_copies[i].rdkit_molecule
-    #     copy_2 = conformer_copies[j].rdkit_molecule
-    #     rmsd = rdkit.Chem.rdMolAlign.GetBestRMS(copy_1, copy_2)
-    #     if rmsd <= rmsd_cutoff:
-    #         redundant.append(j)
-    #         logging.debug(f'Found redundant conformers {i} and {j}')
-    #     logging.debug(f'Done checking {i} {j} for redundancy')
-
-    logging.debug('Dropping redundant items in set')
+    for i, j in itertools.combinations(range(len(df.conformer)), 2):
+        if check_redundant(df.conformer[i].ase_molecule, df.conformer[j].ase_molecule):
+            redundant.append(j)
     redundant = list(set(redundant))
+
+    # never drop the first one
+    if 0 in redundant:
+        redundant.remove(0)
+
     df.drop(df.index[redundant], inplace=True)
 
     if len(df) == 0:
+        print('SOMETHING WENT HORRIBLY WRONG WITH REDUNDANCY CHECK')
         # this is a bandaid because I haven't figured out why df is dropping all conformers
         # grab at least one conformer geometry...
         df = pd.DataFrame(energies, columns=["conformer", "energy"])
