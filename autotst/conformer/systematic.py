@@ -175,7 +175,7 @@ def opt_conf(i):
     """
     try:
         conformer = conformers[i]  # use the global object
-    except TypeError:
+    except (TypeError, KeyError):
         # When running tests for this single function, it's hard to create a global
         # conformers dict. This step allows users to pass in conformer objects rather
         # than specify a global dict
@@ -343,6 +343,57 @@ def opt_conf(i):
 
     logging.debug(f'Returning optimization energy {energy}')
     return energy  # return energy
+
+
+def sorted_hash(atoms):
+    my_string = ''
+    O_atoms = [atom for atom in atoms if atom.symbol == 'O']
+    C_atoms = [atom for atom in atoms if atom.symbol == 'C']
+    H_atoms = [atom for atom in atoms if atom.symbol == 'H']
+
+    O_atoms = sorted(O_atoms, key=functools.cmp_to_key(lambda item1, item2: np.linalg.norm(item1.position) - np.linalg.norm(item2.position)))
+    C_atoms = sorted(C_atoms, key=functools.cmp_to_key(lambda item1, item2: np.linalg.norm(item1.position) - np.linalg.norm(item2.position)))
+    H_atoms = sorted(H_atoms, key=functools.cmp_to_key(lambda item1, item2: np.linalg.norm(item1.position) - np.linalg.norm(item2.position)))
+
+    round_digits = 1
+    for atom in O_atoms:
+        my_string += f'O{np.round(atom.position[0], round_digits):}{np.round(atom.position[1], round_digits)}{np.round(atom.position[2], round_digits)}\n'
+    for atom in C_atoms:
+        my_string += f'C{np.round(atom.position[0], round_digits):}{np.round(atom.position[1], round_digits)}{np.round(atom.position[2], round_digits)}\n'
+    for atom in H_atoms:
+        my_string += f'H{np.round(atom.position[0], round_digits):}{np.round(atom.position[1], round_digits)}{np.round(atom.position[2], round_digits)}\n'
+    return my_string
+
+
+def overlap_molecule(atomsA, atomsB, translate_indices):  # assumes order is same
+    # returns an atoms object of atoms B transformed to overlap with atomsA
+    new_atoms = copy.deepcopy(atomsB)
+
+    # Translate
+    translation_vector = atomsA.positions[translate_indices[0], :] - atomsB.positions[translate_indices[0], :]
+    for i in range(new_atoms.positions.shape[0]):
+        new_atoms.positions[i, :] += translation_vector
+
+    # Rotate
+    vector12A = atomsA.positions[translate_indices[1], :] - atomsA.positions[translate_indices[0], :]
+    vector12B = new_atoms.positions[translate_indices[1], :] - new_atoms.positions[translate_indices[0], :]
+    new_atoms.rotate(vector12B, vector12A, center=new_atoms.positions[translate_indices[0], :])
+    return new_atoms
+
+
+def check_redundant_ase(atoms1, atoms2):
+    # try rotating one molecule into the other's orientation and see if they produce the same hash string
+    A = sorted_hash(atoms1)
+    B = sorted_hash(atoms2)
+    if A == B:
+        return True
+    combos = list(itertools.combinations(range(len(atoms1)), 2))
+    for i, c in enumerate(combos[:10]):
+        new_atoms = overlap_molecule(atoms1, atoms2, c)
+        B = sorted_hash(new_atoms)
+        if A == B:
+            return True
+    return False
 
 
 def check_redundant(args):
@@ -583,6 +634,15 @@ def systematic_search(
     logging.debug('Dropping redundant items in set')
     redundant = list(set(redundant))
     df.drop(df.index[redundant], inplace=True)
+
+    if len(df) == 0:
+        # this is a bandaid because I haven't figured out why df is dropping all conformers
+        # grab at least one conformer geometry...
+        df = pd.DataFrame(energies, columns=["conformer", "energy"])
+        df = df[df.energy < df.energy.min() + (energy_cutoff * ase.units.kcal / ase.units.mol
+                / ase.units.eV)].sort_values("energy").reset_index(drop=True)
+        N = np.min(len(df), 3)
+        df = df.iloc[0:N]
 
     if multiplicity and conformer.rmg_molecule.multiplicity > 2:
         rads = conformer.rmg_molecule.get_radical_count()
